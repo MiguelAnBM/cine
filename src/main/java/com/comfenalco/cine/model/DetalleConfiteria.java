@@ -2,8 +2,6 @@ package com.comfenalco.cine.model;
 
 import java.math.BigDecimal;
 
-import org.hibernate.annotations.GeneratedColumn;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -42,8 +40,9 @@ public class DetalleConfiteria {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_detconf_factura",
-            foreignKeyDefinition = "FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Factura factura;
@@ -55,8 +54,9 @@ public class DetalleConfiteria {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_detconf_producto",
-            foreignKeyDefinition = "FOREIGN KEY (id_producto) REFERENCES productos_confiteria(id_producto) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_producto) REFERENCES productos_confiteria(id_producto) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private ProductoConfiteria productoConfiteria;
@@ -72,8 +72,6 @@ public class DetalleConfiteria {
     @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 
-    // Hibernate la crea
-    @GeneratedColumn("cantidad * precio_unitario")
     @Column(name = "subtotal", precision = 10, scale = 2)
     private BigDecimal subtotal;
 
@@ -82,9 +80,18 @@ public class DetalleConfiteria {
     }
 
     public DetalleConfiteria(ProductoConfiteria productoConfiteria, Integer cantidad) {
+        if (productoConfiteria == null) {
+            throw new IllegalArgumentException("El producto no puede ser nulo");
+        }
+
+        if (cantidad == null) {
+            throw new IllegalArgumentException("La cantidad no puede ser nula");
+        }
+
         this.productoConfiteria = productoConfiteria;
         this.cantidad = cantidad;
         this.precioUnitario = (productoConfiteria == null) ? null : productoConfiteria.getPrecio();
+        this.subtotal = calcularSubtotal();
     }
 
     // Para calcular antes de guardar, cuando "subtotal" todavía es null

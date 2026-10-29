@@ -42,8 +42,9 @@ public class DetalleBoleto {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_detboleto_factura",
-            foreignKeyDefinition = "FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_factura) REFERENCES facturas(id_factura) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Factura factura;
@@ -55,8 +56,9 @@ public class DetalleBoleto {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_detboleto_funcion",
-            foreignKeyDefinition = "FOREIGN KEY (id_funcion) REFERENCES funciones(id_funcion) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_funcion) REFERENCES funciones(id_funcion) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Funcion funcion;
@@ -80,6 +82,10 @@ public class DetalleBoleto {
     }
 
     public DetalleBoleto(Funcion funcion, String codigoAsiento) {
+        if (funcion == null || funcion.getSala() == null) {
+            throw new IllegalArgumentException("La función y su sala son obligatorias");
+        }
+
         this.funcion = funcion;
         this.codigoAsiento = (codigoAsiento == null) ? null : codigoAsiento.trim().toUpperCase(Locale.ROOT);
         this.precioUnitario = funcion.getSala().getPrecioBoleto();   // copia del precio vigente

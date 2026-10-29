@@ -36,8 +36,9 @@ public class Funcion {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_funcion_pelicula",
-            foreignKeyDefinition = "FOREIGN KEY (id_pelicula) REFERENCES peliculas(id_pelicula) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_pelicula) REFERENCES peliculas(id_pelicula) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Pelicula pelicula;
@@ -49,8 +50,9 @@ public class Funcion {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_funcion_sala",
-            foreignKeyDefinition = "FOREIGN KEY (id_sala) REFERENCES salas(id_sala) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_sala) REFERENCES salas(id_sala) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Sala sala;

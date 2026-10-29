@@ -37,13 +37,14 @@ public class Factura {
         nullable = false,
         foreignKey = @ForeignKey(
             name = "fk_factura_usuario",
-            foreignKeyDefinition = "FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) " +
-                                   "ON DELETE RESTRICT ON UPDATE CASCADE"
+            foreignKeyDefinition = 
+                "FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) " +
+                "ON DELETE RESTRICT ON UPDATE CASCADE"
         )
     )
     private Usuario usuario;
 
-    @ColumnDefault("CURRENT_TIMESTAMP(6)")
+    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "fecha_hora", nullable = false, updatable = false)
     private LocalDateTime fechaHora;
     
@@ -88,11 +89,19 @@ public class Factura {
 
     // Mantiene sincronizados los dos lados de la relación
     public void agregarBoleto(DetalleBoleto boleto) {
+        if (boleto == null) {
+            throw new IllegalArgumentException("El boleto no puede ser nulo");
+        }
+
         boletos.add(boleto);
         boleto.setFactura(this);
     }
 
     public void agregarProducto(DetalleConfiteria detalle) {
+        if (detalle == null) {
+            throw new IllegalArgumentException("El producto no puede ser nulo");
+        }
+
         productos.add(detalle);
         detalle.setFactura(this);
     }
