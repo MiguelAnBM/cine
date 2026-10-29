@@ -4,13 +4,26 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import org.hibernate.annotations.ColumnDefault;
 
 import com.comfenalco.cine.model.enums.Clasificacion;
 import com.comfenalco.cine.model.enums.EstadoPelicula;
 import com.comfenalco.cine.model.enums.Genero;
 
 @Entity
-@Table(name = "peliculas")
+@Table(
+    name = "peliculas",
+    check = { 
+        @CheckConstraint(
+            name = "chk_pelicula_duracion",
+            constraint = 
+                "REGEXP_LIKE(duracion, '^[0-9]H [0-5]?[0-9]M$', 'c') " +
+                "AND NOT REGEXP_LIKE(duracion, '^0H 0?0M$', 'c')"
+        )
+    }
+)
 public class Pelicula {
 
     @Id 
@@ -19,38 +32,43 @@ public class Pelicula {
     private Long id;
 
     @NotBlank(message = "El titulo es obligatorio")
-    @Column(nullable = false, unique = true, length = 150)
+    @Size(max = 150)
+    @Column(nullable = false, length = 150)
     private String titulo;
 
     @NotBlank(message = "La sinopsis es obligatoria")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String sinopsis;
 
+    // Formato "2H 30M", y no puede ser 0H 0M
     @NotBlank(message = "La duración es obligatoria")
-    @Pattern(regexp = "^\\dH [0-5]?\\dM$", 
-            message = "Formato inválido. Las horas deben ser de un solo dígito. Ejemplo: '2H 30M'")
+    @Pattern(
+        regexp = "^(?!0H 0?0M$)[0-9]H [0-5]?[0-9]M$", 
+        message = "La duración debe tener el formato '2H 30M' y ser mayor a cero")
     @Column(nullable = false, length = 6)
     private String duracion;
 
     @NotNull(message = "La clasificación es obligatoria")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 15)
     private Clasificacion clasificacion;
 
     @NotNull(message = "El género es obligatorio")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Genero genero;
 
+    @Size(max = 2000)
     @Column(name = "imagen_url", length = 2000)
     private String imagenUrl;
-
-    @NotNull
+    
+    @ColumnDefault("'ACTIVA'")
+    @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private EstadoPelicula estado = EstadoPelicula.ACTIVA;
 
-    public Pelicula(){
+    protected Pelicula(){
         
     }
 
@@ -67,10 +85,6 @@ public class Pelicula {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getTitulo() {
