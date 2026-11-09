@@ -1,9 +1,13 @@
 -- =========================================================================
 -- ESQUEMA: cinecomfenalco_schema.sql
 -- Requiere MySQL 8.0.16+ para que se apliquen los CHECK.
--- ⚠️ ENGINE no se puede fijar a nivel de esquema; verifica que el servidor
---    tenga default-storage-engine=InnoDB antes de ejecutar este script:
---       SELECT @@default_storage_engine;
+-- ENGINE no se puede fijar a nivel de esquema; verifica que el servidor
+-- tenga default-storage-engine=InnoDB antes de ejecutar este script:
+--    SELECT @@default_storage_engine;
+--
+-- Si el esquema lo genera Hibernate, este script es la referencia de lo
+-- que deben producir las entidades. Las vistas y el trigger (secciones
+-- finales) no los crea Hibernate: van en post-schema.sql.
 -- =========================================================================
 
 -- Configuración del esquema: charset y collation se heredan en tablas NUEVAS.
@@ -24,8 +28,6 @@ CREATE TABLE usuarios (
     contrasena_hash VARCHAR(255) NULL,
     estado          ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO',
 
-    -- Restricciones
-
     -- Login único: no puede haber dos usuarios con el mismo username.
     CONSTRAINT uq_usuario_username UNIQUE (username),
 
@@ -45,13 +47,14 @@ CREATE TABLE peliculas (
     sinopsis      TEXT NOT NULL,
     duracion      VARCHAR(6) NOT NULL,
     clasificacion ENUM('TODO_PUBLICO','MAYORES_7','MAYORES_15','MAYORES_18') NOT NULL,
-    genero        ENUM('ACCION', 'ANIMACION', 'AVENTURA', 'CIENCIA_FICCION', 
-                        'COMEDIA', 'DRAMA', 'FANTASIA', 'TERROR', 'SUSPENSO', 
-                        'ROMANCE', 'DOCUMENTAL', 'MUSICAL') NOT NULL,
+    genero        ENUM('ACCION', 'ANIMACION', 'AVENTURA', 'CIENCIA_FICCION',
+                       'COMEDIA', 'DRAMA', 'FANTASIA', 'TERROR', 'SUSPENSO',
+                       'ROMANCE', 'DOCUMENTAL', 'MUSICAL') NOT NULL,
     imagen_url    VARCHAR(2000),
     estado        ENUM('ACTIVA','INACTIVA') NOT NULL DEFAULT 'ACTIVA',
 
-    -- Restricciones
+    -- No puede haber dos películas con el mismo título.
+    CONSTRAINT uq_pelicula_titulo UNIQUE (titulo),
 
     -- La duración debe ser positiva y con el patrón correcto: "2H 30M" (no existen películas de 0 o menos minutos).
     CONSTRAINT chk_pelicula_duracion CHECK (
@@ -69,8 +72,6 @@ CREATE TABLE salas (
     tipo           ENUM('DOS_D','TRES_D','IMAX') NOT NULL,
     precio_boleto  DECIMAL(10,2) NOT NULL,
     estado         ENUM('ACTIVA','INACTIVA') NOT NULL DEFAULT 'ACTIVA',
-
-    -- Restricciones
 
     -- No puede haber dos salas con el mismo número/nombre.
     CONSTRAINT uq_sala_nombre UNIQUE (nombre),
@@ -90,16 +91,16 @@ CREATE TABLE funciones (
     hora_inicio TIME NOT NULL,
     estado      ENUM('PROGRAMADA','EN_CURSO','FINALIZADA','CANCELADA')
                 NOT NULL DEFAULT 'PROGRAMADA',
-    
-    -- Índices
-
-    INDEX idx_funcion_fecha_hora (fecha, hora_inicio),
-    INDEX idx_funcion_pelicula_fecha (id_pelicula, fecha),
-
-    -- Restricciones
 
     -- Impide programar dos funciones en la misma sala, mismo día y misma hora.
+    -- Además sirve de índice para la FK id_sala.
     CONSTRAINT uq_funcion_sala_fecha_hora UNIQUE (id_sala, fecha, hora_inicio),
+
+    -- Cartelera del día: WHERE fecha = ? ORDER BY hora_inicio
+    INDEX idx_funcion_fecha_hora (fecha, hora_inicio),
+
+    -- Próximas funciones de una película. Además sirve de índice para la FK id_pelicula.
+    INDEX idx_funcion_pelicula_fecha (id_pelicula, fecha),
 
     -- Toda función debe apuntar a una película existente; no se puede borrar
     -- una película que tenga funciones programadas.
@@ -121,9 +122,8 @@ CREATE TABLE productos_confiteria (
     descripcion TEXT,
     precio      DECIMAL(10,2) NOT NULL,
     imagen_url  VARCHAR(500),
+    categoria   ENUM('COMBOS','SNACKS','BEBIDAS','DULCES') NOT NULL,
     estado      ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO',
-
-    -- Restricciones
 
     -- No puede haber dos productos con el mismo nombre en el catálogo.
     CONSTRAINT uq_producto_nombre UNIQUE (nombre),
@@ -136,21 +136,29 @@ CREATE TABLE productos_confiteria (
 -- 6. TABLA FACTURA
 --    fecha_hora es el dato de negocio para reportes (7 días, mes, etc.).
 --    NO se añade created_at: sería redundante con fecha_hora.
+--    Las facturas no se borran: se anulan (estado = 'ANULADA').
 -- =========================================================================
 CREATE TABLE facturas (
-    id_factura     BIGINT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario     BIGINT NOT NULL,
-    fecha_hora     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    metodo_pago    ENUM('EFECTIVO','TARJETA') NOT NULL,
-    nombre_cliente VARCHAR(100) NULL,
-    correo_cliente VARCHAR(150) NULL,
+    id_factura      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario      BIGINT NOT NULL,
+    fecha_hora      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    metodo_pago     ENUM('EFECTIVO','TARJETA') NOT NULL,
+    nombre_cliente  VARCHAR(100) NULL,
+    correo_cliente  VARCHAR(150) NULL,
+    estado          ENUM('EMITIDA','ANULADA') NOT NULL DEFAULT 'EMITIDA',
+    fecha_anulacion DATETIME(6) NULL,
 
-    -- Índices
+    -- La fecha de anulación existe si y solo si la factura está anulada.
+    CONSTRAINT chk_factura_anulacion CHECK (
+        (estado = 'EMITIDA' AND fecha_anulacion IS NULL) OR
+        (estado = 'ANULADA' AND fecha_anulacion IS NOT NULL)
+    ),
 
+    -- Reportes por rango de fechas.
     INDEX idx_factura_fecha (fecha_hora),
-    INDEX idx_factura_usuario_fecha (id_usuario, fecha_hora),
 
-    -- Restricciones
+    -- Facturas de un taquillero por fecha. Además sirve de índice para la FK id_usuario.
+    INDEX idx_factura_usuario_fecha (id_usuario, fecha_hora),
 
     -- Toda factura debe estar asociada a un usuario que la registró;
     -- no se puede borrar un usuario que tenga facturas.
@@ -159,22 +167,44 @@ CREATE TABLE facturas (
 );
 
 -- =========================================================================
+-- TRIGGER: las facturas no se pueden eliminar (ni siquiera las que no
+-- tienen detalles, que el RESTRICT de las FK no protege).
+-- =========================================================================
+DROP TRIGGER IF EXISTS trg_facturas_no_delete;
+
+CREATE TRIGGER trg_facturas_no_delete
+BEFORE DELETE ON facturas
+FOR EACH ROW
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT = 'Las facturas no se pueden eliminar';
+
+-- =========================================================================
 -- 7. TABLA DETALLE_BOLETO
+--    asiento_activo vale lo mismo que codigo_asiento mientras el boleto está
+--    vigente y pasa a NULL cuando se anula la factura. El UNIQUE usa esa
+--    columna: MySQL permite varios NULL, así el asiento queda libre para
+--    volver a venderse y el boleto anulado conserva su historial.
 -- =========================================================================
 CREATE TABLE detalles_boleto (
     id_detalle_boleto BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_factura        BIGINT NOT NULL,
     id_funcion        BIGINT NOT NULL,
     codigo_asiento    VARCHAR(3) NOT NULL,
+    asiento_activo    VARCHAR(3) NULL,
     precio_unitario   DECIMAL(10,2) NOT NULL,
 
-    -- Restricciones
-
-    -- Impide vender el mismo asiento dos veces en la misma función.
-    CONSTRAINT uq_boleto_funcion_asiento UNIQUE (id_funcion, codigo_asiento),
+    -- Impide vender el mismo asiento dos veces en la misma función (solo boletos vigentes).
+    -- Además sirve de índice para la FK id_funcion.
+    CONSTRAINT uq_boleto_funcion_asiento UNIQUE (id_funcion, asiento_activo),
 
     -- El precio del boleto no puede ser negativo.
     CONSTRAINT chk_boleto_precio CHECK (precio_unitario >= 0),
+
+    -- Asientos válidos: filas A-H, columnas 1-10.
+    CONSTRAINT chk_boleto_asiento CHECK (REGEXP_LIKE(codigo_asiento, '^[A-H]([1-9]|10)$', 'c')),
+
+    -- El asiento activo es el mismo asiento del boleto, o NULL si fue anulado.
+    CONSTRAINT chk_boleto_asiento_activo CHECK (asiento_activo IS NULL OR asiento_activo = codigo_asiento),
 
     -- No se puede borrar una factura que tenga boletos.
     CONSTRAINT fk_detboleto_factura FOREIGN KEY (id_factura)
@@ -183,13 +213,12 @@ CREATE TABLE detalles_boleto (
     -- Todo boleto debe apuntar a una función existente; no se puede borrar
     -- una función que tenga boletos vendidos.
     CONSTRAINT fk_detboleto_funcion FOREIGN KEY (id_funcion)
-        REFERENCES funciones(id_funcion) ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT chk_boleto_asiento CHECK (REGEXP_LIKE(codigo_asiento, '^[A-H]([1-9]|10)$', 'c'))
+        REFERENCES funciones(id_funcion) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- =========================================================================
 -- 8. TABLA DETALLE_CONFITERIA
+--    No guarda el subtotal: se calcula como cantidad * precio_unitario.
 -- =========================================================================
 CREATE TABLE detalles_confiteria (
     id_detalle_confiteria BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -197,9 +226,6 @@ CREATE TABLE detalles_confiteria (
     id_producto           BIGINT NOT NULL,
     cantidad              INT NOT NULL,
     precio_unitario       DECIMAL(10,2) NOT NULL,
-    subtotal              DECIMAL(10,2) AS (cantidad * precio_unitario) STORED,
-
-    -- Restricciones
 
     -- Consolida una sola línea por producto en cada factura.
     CONSTRAINT uq_conf_factura_producto UNIQUE (id_factura, id_producto),
@@ -224,6 +250,7 @@ CREATE TABLE detalles_confiteria (
 -- VISTA: vw_factura_total
 -- Total de cada factura = boletos + confitería. No almacena datos: suma los
 -- precios guardados en los detalles, no los precios actuales del catálogo.
+-- Incluye el estado: los reportes de ventas deben filtrar estado = 'EMITIDA'.
 -- =========================================================================
 CREATE OR REPLACE VIEW vw_factura_total AS
 SELECT
@@ -233,6 +260,8 @@ SELECT
     f.metodo_pago,
     f.nombre_cliente,
     f.correo_cliente,
+    f.estado,
+    f.fecha_anulacion,
     COALESCE(b.total_boletos, 0)                                   AS total_boletos,
     COALESCE(c.total_confiteria, 0)                                AS total_confiteria,
     COALESCE(b.total_boletos, 0) + COALESCE(c.total_confiteria, 0) AS total_factura
@@ -243,7 +272,7 @@ LEFT JOIN (
     GROUP BY id_factura
 ) b ON b.id_factura = f.id_factura
 LEFT JOIN (
-    SELECT id_factura, SUM(subtotal) AS total_confiteria
+    SELECT id_factura, SUM(cantidad * precio_unitario) AS total_confiteria
     FROM detalles_confiteria
     GROUP BY id_factura
 ) c ON c.id_factura = f.id_factura;
@@ -251,7 +280,8 @@ LEFT JOIN (
 -- =========================================================================
 -- VISTA: vw_asientos_funcion
 -- Los 80 asientos (filas A-H x columnas 1-10) de cada función.
--- ocupado = 1 si el asiento ya tiene un boleto vendido, 0 si está libre.
+-- ocupado = 1 si el asiento tiene un boleto vigente, 0 si está libre.
+-- Los boletos de facturas anuladas (asiento_activo NULL) no cuentan.
 -- =========================================================================
 CREATE OR REPLACE VIEW vw_asientos_funcion AS
 SELECT
@@ -272,7 +302,7 @@ CROSS JOIN (
 ) a
 LEFT JOIN detalles_boleto b
        ON b.id_funcion = f.id_funcion
-      AND b.codigo_asiento = a.codigo_asiento;
+      AND b.asiento_activo = a.codigo_asiento;
 
 -- =========================================================================
 -- Mapa completo de una función, ordenado como una cuadrícula
@@ -283,9 +313,10 @@ LEFT JOIN detalles_boleto b
 -- ORDER BY LEFT(codigo_asiento, 1), CAST(SUBSTRING(codigo_asiento, 2) AS UNSIGNED);
 
 -- =========================================================================
--- Ventas de la última semana
+-- Ventas de la última semana (solo facturas vigentes)
 -- =========================================================================
 -- SELECT id_factura, fecha_hora, total_boletos, total_confiteria, total_factura
 -- FROM vw_factura_total
--- WHERE fecha_hora >= NOW() - INTERVAL 7 DAY
+-- WHERE estado = 'EMITIDA'
+--   AND fecha_hora >= NOW() - INTERVAL 7 DAY
 -- ORDER BY fecha_hora;

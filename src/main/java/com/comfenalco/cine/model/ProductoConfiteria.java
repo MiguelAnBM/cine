@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.hibernate.annotations.ColumnDefault;
 
+import com.comfenalco.cine.model.enums.CategoriaProducto;
 import com.comfenalco.cine.model.enums.EstadoProducto;
 
 import jakarta.persistence.*;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -46,25 +48,35 @@ public class ProductoConfiteria {
     private BigDecimal precio;
 
     @Size(max = 500)
+    @Pattern(
+        regexp = "^https?://\\S+$", 
+        message = "La URL debe empezar con http:// o https://")
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
+
+    @NotNull(message = "La categoría es obligatoria")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private CategoriaProducto categoria;
 
     @ColumnDefault("'ACTIVO'")
     @NotNull(message = "El estado del producto es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoProducto estado = EstadoProducto.ACTIVO;
+    private EstadoProducto estado;
     
     protected ProductoConfiteria(){
         
     }
 
-    public ProductoConfiteria(String nombre, String descripcion, BigDecimal precio, String imagenUrl, EstadoProducto estado) {
+    public ProductoConfiteria(String nombre, String descripcion, BigDecimal precio, String imagenUrl,
+            CategoriaProducto categoria) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
         this.imagenUrl = imagenUrl;
-        this.estado = estado;
+        this.categoria = categoria;
+        this.estado = EstadoProducto.ACTIVO;
     }
 
     public Long getId() {
@@ -103,6 +115,14 @@ public class ProductoConfiteria {
         this.imagenUrl = imagenUrl;
     }
 
+    public CategoriaProducto getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(CategoriaProducto categoria) {
+        this.categoria = categoria;
+    }
+
     public EstadoProducto getEstado() {
         return estado;
     }
@@ -111,5 +131,4 @@ public class ProductoConfiteria {
         this.estado = estado;
     }
 
-    
 }

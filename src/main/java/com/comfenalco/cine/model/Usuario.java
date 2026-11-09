@@ -55,18 +55,18 @@ public class Usuario {
     @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoUsuario estado = EstadoUsuario.ACTIVO;
+    private EstadoUsuario estado;
 
     protected Usuario(){
 
     }
     
-    public Usuario(String nombreCompleto, String username, RolUsuario rol, String contrasenaHash, EstadoUsuario estado) {
+    public Usuario(String nombreCompleto, String username, RolUsuario rol, String contrasenaHash) {
         this.nombreCompleto = nombreCompleto;
         this.username = username;
         this.rol = rol;
         this.contrasenaHash = contrasenaHash;
-        this.estado = estado;
+        this.estado = EstadoUsuario.ACTIVO;
     }
 
     // Replicación de la regla del CHECK

@@ -15,6 +15,7 @@ import com.comfenalco.cine.model.enums.Genero;
 @Entity
 @Table(
     name = "peliculas",
+    uniqueConstraints = @UniqueConstraint(name = "uq_pelicula_titulo", columnNames = "titulo"),
     check = { 
         @CheckConstraint(
             name = "chk_pelicula_duracion",
@@ -37,6 +38,7 @@ public class Pelicula {
     private String titulo;
 
     @NotBlank(message = "La sinopsis es obligatoria")
+    @Size(max = 5000)
     @Column(nullable = false, columnDefinition = "TEXT")
     private String sinopsis;
 
@@ -59,6 +61,9 @@ public class Pelicula {
     private Genero genero;
 
     @Size(max = 2000)
+    @Pattern(
+        regexp = "^https?://\\S+$", 
+        message = "La URL debe empezar con http:// o https://")
     @Column(name = "imagen_url", length = 2000)
     private String imagenUrl;
     
@@ -66,21 +71,28 @@ public class Pelicula {
     @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoPelicula estado = EstadoPelicula.ACTIVA;
+    private EstadoPelicula estado;
 
     protected Pelicula(){
         
     }
 
     public Pelicula(String titulo, String sinopsis, String duracion, Clasificacion clasificacion, Genero genero,
-            String imagenUrl, EstadoPelicula estado) {
+            String imagenUrl) {
         this.titulo = titulo;
         this.sinopsis = sinopsis;
         this.duracion = duracion;
         this.clasificacion = clasificacion;
         this.genero = genero;
         this.imagenUrl = imagenUrl;
-        this.estado = estado;
+        this.estado = EstadoPelicula.ACTIVA;
+    }
+
+    // Formato validado: "2H 30M" (un dígito de horas, minutos de 0 a 59)
+    public int duracionEnMinutos() {
+        int horas = Character.getNumericValue(duracion.charAt(0));
+        int minutos = Integer.parseInt(duracion.substring(3, duracion.length() - 1));
+        return horas * 60 + minutos;
     }
 
     public Long getId() {
@@ -142,8 +154,5 @@ public class Pelicula {
     public void setEstado(EstadoPelicula estado) {
         this.estado = estado;
     }
-
-    
-
     
 }

@@ -3,8 +3,10 @@ package com.comfenalco.cine.config;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,12 +18,8 @@ import com.comfenalco.cine.model.Pelicula;
 import com.comfenalco.cine.model.ProductoConfiteria;
 import com.comfenalco.cine.model.Sala;
 import com.comfenalco.cine.model.Usuario;
+import com.comfenalco.cine.model.enums.CategoriaProducto;
 import com.comfenalco.cine.model.enums.Clasificacion;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
-import com.comfenalco.cine.model.enums.EstadoPelicula;
-import com.comfenalco.cine.model.enums.EstadoProducto;
-import com.comfenalco.cine.model.enums.EstadoSala;
-import com.comfenalco.cine.model.enums.EstadoUsuario;
 import com.comfenalco.cine.model.enums.Genero;
 import com.comfenalco.cine.model.enums.MetodoPago;
 import com.comfenalco.cine.model.enums.RolUsuario;
@@ -50,19 +48,22 @@ public class DatosIniciales implements CommandLineRunner {
         private final FuncionRepository funcionRepository;
         private final ProductoConfiteriaRepository productoConfiteriaRepository;
         private final FacturaRepository facturaRepository;
+        private final PasswordEncoder passwordEncoder;
 
         public DatosIniciales(UsuarioRepository usuarioRepository,
                 PeliculaRepository peliculaRepository,
                 SalaRepository salaRepository,
                 FuncionRepository funcionRepository,
                 ProductoConfiteriaRepository productoConfiteriaRepository,
-                FacturaRepository facturaRepository) {
+                FacturaRepository facturaRepository,
+                PasswordEncoder passwordEncoder) {
                 this.usuarioRepository = usuarioRepository;
                 this.peliculaRepository = peliculaRepository;
                 this.salaRepository = salaRepository;
                 this.funcionRepository = funcionRepository;
                 this.productoConfiteriaRepository = productoConfiteriaRepository;
                 this.facturaRepository = facturaRepository;
+                this.passwordEncoder = passwordEncoder;
         }
 
         @Override
@@ -72,31 +73,39 @@ public class DatosIniciales implements CommandLineRunner {
                         return;                       // ya hay datos: no duplicar
                 }
 
+                List<Usuario> usuarios = sembrarUsuarios();
+                List<Pelicula> peliculas = sembrarPeliculas();
+                List<Sala> salas = sembrarSalas();
+                List<Funcion> funciones = sembrarFunciones(peliculas, salas);
+                List<ProductoConfiteria> productos = sembrarProductos();
+
+                sembrarFacturas(usuarios, funciones, productos);
+        }
+
+        private List<Usuario> sembrarUsuarios() {
                 Usuario administrador = new Usuario(
                         "Administrador General",
                         "admin",
                         RolUsuario.ADMINISTRADOR,
-                        "{noop}admin123",          // dato de ejemplo, no usar en producción
-                        EstadoUsuario.ACTIVO);
+                        passwordEncoder.encode("admin123"));
 
                 Usuario taquillero = new Usuario(
                         "Laura Taquilla",
                         "laura",
                         RolUsuario.TAQUILLERO,
-                        null,
-                        EstadoUsuario.ACTIVO);
+                        null);
 
-                usuarioRepository.save(administrador);
-                usuarioRepository.save(taquillero);
+                return usuarioRepository.saveAll(List.of(administrador, taquillero));
+        }
 
+        private List<Pelicula> sembrarPeliculas() {
                 Pelicula dune = new Pelicula(
                         "Dune: Parte Dos",
                         "Paul Atreides se une a los Fremen para vengar a su familia.",
                         "2H 46M",
                         Clasificacion.MAYORES_15,
                         Genero.CIENCIA_FICCION,
-                        "https://example.com/dune-parte-dos.jpg",
-                        EstadoPelicula.ACTIVA);
+                        "https://example.com/dune-parte-dos.jpg");
 
                 Pelicula interestelar = new Pelicula(
                         "Interestelar",
@@ -104,8 +113,7 @@ public class DatosIniciales implements CommandLineRunner {
                         "2H 49M",
                         Clasificacion.MAYORES_7,
                         Genero.CIENCIA_FICCION,
-                        "https://example.com/interestelar.jpg",
-                        EstadoPelicula.ACTIVA);
+                        "https://example.com/interestelar.jpg");
 
                 Pelicula coco = new Pelicula(
                         "Coco",
@@ -113,8 +121,7 @@ public class DatosIniciales implements CommandLineRunner {
                         "1H 45M",
                         Clasificacion.TODO_PUBLICO,
                         Genero.ANIMACION,
-                        "https://example.com/coco.jpg",
-                        EstadoPelicula.ACTIVA);
+                        "https://example.com/coco.jpg");
 
                 Pelicula padrino = new Pelicula(
                         "El padrino",
@@ -122,35 +129,39 @@ public class DatosIniciales implements CommandLineRunner {
                         "2H 55M",
                         Clasificacion.MAYORES_15,
                         Genero.DRAMA,
-                        "https://example.com/el-padrino.jpg",
-                        EstadoPelicula.ACTIVA);
+                        "https://example.com/el-padrino.jpg");
 
-                peliculaRepository.save(dune);
-                peliculaRepository.save(interestelar);
-                peliculaRepository.save(coco);
-                peliculaRepository.save(padrino);
+                return peliculaRepository.saveAll(List.of(dune, interestelar, coco, padrino));
+        }
 
+        private List<Sala> sembrarSalas() {
                 Sala salaUno = new Sala(
                         "Sala 1",
                         TipoSala.DOS_D,
-                        new BigDecimal("18000.00"),
-                        EstadoSala.ACTIVA);
+                        new BigDecimal("18000.00"));
 
                 Sala salaDos = new Sala(
                         "Sala 2",
                         TipoSala.TRES_D,
-                        new BigDecimal("22000.00"),
-                        EstadoSala.ACTIVA);
+                        new BigDecimal("22000.00"));
 
                 Sala salaImax = new Sala(
                         "Sala IMAX",
                         TipoSala.IMAX,
-                        new BigDecimal("30000.00"),
-                        EstadoSala.ACTIVA);
+                        new BigDecimal("30000.00"));
 
-                salaRepository.save(salaUno);
-                salaRepository.save(salaDos);
-                salaRepository.save(salaImax);
+                return salaRepository.saveAll(List.of(salaUno, salaDos, salaImax));
+        }
+
+        private List<Funcion> sembrarFunciones(List<Pelicula> peliculas, List<Sala> salas) {
+                Pelicula dune = peliculas.get(0);
+                Pelicula interestelar = peliculas.get(1);
+                Pelicula coco = peliculas.get(2);
+                Pelicula padrino = peliculas.get(3);
+
+                Sala salaUno = salas.get(0);
+                Sala salaDos = salas.get(1);
+                Sala salaImax = salas.get(2);
 
                 LocalDate manana = LocalDate.now().plusDays(1);
 
@@ -158,83 +169,87 @@ public class DatosIniciales implements CommandLineRunner {
                         dune,
                         salaUno,
                         manana,
-                        LocalTime.of(18, 0),
-                        EstadoFuncion.PROGRAMADA);
+                        LocalTime.of(18, 0));
 
                 Funcion duneNoche = new Funcion(
                         dune,
                         salaDos,
                         manana,
-                        LocalTime.of(20, 30),
-                        EstadoFuncion.PROGRAMADA);
+                        LocalTime.of(20, 30));
 
                 Funcion interestelarTarde = new Funcion(
                         interestelar,
                         salaUno,
                         manana.plusDays(1),
-                        LocalTime.of(19, 0),
-                        EstadoFuncion.PROGRAMADA);
+                        LocalTime.of(19, 0));
 
                 Funcion cocoManana = new Funcion(
                         coco,
                         salaImax,
                         manana.plusDays(1),
-                        LocalTime.of(16, 0),
-                        EstadoFuncion.PROGRAMADA);
+                        LocalTime.of(16, 0));
 
                 Funcion padrinoNoche = new Funcion(
                         padrino,
                         salaDos,
                         manana.plusDays(2),
-                        LocalTime.of(21, 0),
-                        EstadoFuncion.PROGRAMADA);
+                        LocalTime.of(21, 0));
 
-                funcionRepository.save(duneTarde);
-                funcionRepository.save(duneNoche);
-                funcionRepository.save(interestelarTarde);
-                funcionRepository.save(cocoManana);
-                funcionRepository.save(padrinoNoche);
+                return funcionRepository.saveAll(List.of(duneTarde,
+                        duneNoche, interestelarTarde, cocoManana, padrinoNoche));
+        }
 
+        private List<ProductoConfiteria> sembrarProductos() {
                 ProductoConfiteria crispetasGrandes = new ProductoConfiteria(
                         "Crispetas grandes",
                         "Crispetas con mantequilla",
                         new BigDecimal("12000.00"),
                         null,
-                        EstadoProducto.ACTIVO);
+                        CategoriaProducto.SNACKS);
 
                 ProductoConfiteria crispetasMedianas = new ProductoConfiteria(
                         "Crispetas medianas",
                         "Crispetas con mantequilla",
                         new BigDecimal("9000.00"),
                         null,
-                        EstadoProducto.ACTIVO);
+                        CategoriaProducto.SNACKS);
 
                 ProductoConfiteria gaseosa = new ProductoConfiteria(
                         "Gaseosa",
                         "Bebida fría de 500 ml",
                         new BigDecimal("6000.00"),
                         null,
-                        EstadoProducto.ACTIVO);
+                        CategoriaProducto.BEBIDAS);
 
                 ProductoConfiteria perroCaliente = new ProductoConfiteria(
                         "Perro caliente",
                         "Perro caliente con papas",
                         new BigDecimal("10000.00"),
                         null,
-                        EstadoProducto.ACTIVO);
+                        CategoriaProducto.SNACKS);
 
                 ProductoConfiteria chocolatina = new ProductoConfiteria(
                         "Chocolatina",
                         "Chocolatina de leche",
                         new BigDecimal("4500.00"),
                         null,
-                        EstadoProducto.ACTIVO);
+                        CategoriaProducto.DULCES);
 
-                productoConfiteriaRepository.save(crispetasGrandes);
-                productoConfiteriaRepository.save(crispetasMedianas);
-                productoConfiteriaRepository.save(gaseosa);
-                productoConfiteriaRepository.save(perroCaliente);
-                productoConfiteriaRepository.save(chocolatina);
+                return productoConfiteriaRepository.saveAll(List.of(crispetasGrandes,
+                        crispetasMedianas, gaseosa, perroCaliente, chocolatina));
+        }
+
+        private void sembrarFacturas(List<Usuario> usuarios, List<Funcion> funciones,
+                List<ProductoConfiteria> productos) {
+                Usuario administrador = usuarios.get(0);
+                Usuario taquillero = usuarios.get(1);
+
+                Funcion duneTarde = funciones.get(0);
+                Funcion interestelarTarde = funciones.get(2);
+
+                ProductoConfiteria crispetasGrandes = productos.get(0);
+                ProductoConfiteria gaseosa = productos.get(2);
+                ProductoConfiteria perroCaliente = productos.get(3);
 
                 Factura facturaMostrador = new Factura(
                         taquillero,

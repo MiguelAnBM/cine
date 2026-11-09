@@ -5,6 +5,9 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -23,12 +26,14 @@ public interface FuncionRepository extends JpaRepository<Funcion, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM Funcion f WHERE f.id = :id")
     Optional<Funcion> findByIdForUpdate(@Param("id") Long id);
-    
-    boolean existsBySalaIdAndFechaAndHoraInicio(Long idSala, LocalDate fecha, LocalTime horaInicio);
 
-    boolean existsByPeliculaId(Long idPelicula);   // para no desactivar/borrar una película con funciones
-    
-    boolean existsBySalaId(Long idSala);
+    // Busca Películas con funciones programadas después de {fecha}
+    boolean existsByPeliculaIdAndEstadoAndFechaGreaterThanEqual(
+        Long idPelicula, EstadoFuncion estado, LocalDate fecha);
+
+    // Busca Salas con funciones programadas después de {fecha}
+    boolean existsBySalaIdAndEstadoAndFechaGreaterThanEqual(
+        Long idSala, EstadoFuncion estado, LocalDate fecha);
 
     // Cartelera del día: película y sala en una sola consulta
     @Query(
@@ -42,16 +47,19 @@ public interface FuncionRepository extends JpaRepository<Funcion, Long> {
     List<Funcion> findCartelera(@Param("fecha") LocalDate fecha,
                                 @Param("estado") EstadoFuncion estado);
 
-    // Para validar solapamientos: funciones de una sala ese día, con su película (duración)
+    // Funciones de una sala entre dos fechas, con su película (para calcular la duración)
     @Query(
         """
             SELECT f FROM Funcion f
             JOIN FETCH f.pelicula
-            WHERE f.sala.id = :idSala AND f.fecha = :fecha AND f.estado <> :excluido
-            ORDER BY f.horaInicio
+            WHERE f.sala.id = :idSala
+            AND f.fecha BETWEEN :desde AND :hasta
+            AND f.estado <> :excluido
+            ORDER BY f.fecha, f.horaInicio
         """)
-    List<Funcion> findDelDiaPorSala(@Param("idSala") Long idSala,
-                                    @Param("fecha") LocalDate fecha,
+    List<Funcion> findDeSalaEnRango(@Param("idSala") Long idSala,
+                                    @Param("desde") LocalDate desde,
+                                    @Param("hasta") LocalDate hasta,
                                     @Param("excluido") EstadoFuncion excluido);
 
     @Query(
@@ -74,5 +82,26 @@ public interface FuncionRepository extends JpaRepository<Funcion, Long> {
     List<Pelicula> findPeliculasEnCartelera(@Param("desde") LocalDate desde,
                                             @Param("estadoFuncion") EstadoFuncion estadoFuncion,
                                             @Param("estadoPelicula") EstadoPelicula estadoPelicula);
-}
 
+    // Listado de todas las funciones (pantalla Funciones): película y sala sin consultas extra
+    @EntityGraph(attributePaths = {"pelicula", "sala"})
+    Page<Funcion> findAll(Pageable pageable);
+
+    // Próximas funciones (pantalla Inicio): las que aún no empiezan, de la más cercana a la más lejana
+    @Query(
+        """
+            SELECT f FROM Funcion f
+            JOIN FETCH f.pelicula
+            JOIN FETCH f.sala
+            WHERE f.estado = :estado
+            AND (f.fecha > :hoy OR (f.fecha = :hoy AND f.horaInicio >= :ahora))
+            ORDER BY f.fecha, f.horaInicio
+        """)
+    List<Funcion> findProximas(@Param("estado") EstadoFuncion estado,
+                               @Param("hoy") LocalDate hoy,
+                               @Param("ahora") LocalTime ahora,
+                               Pageable pageable);
+
+    // Funciones en un estado dentro de un rango de fechas (ambos extremos incluidos)
+    long countByEstadoAndFechaBetween(EstadoFuncion estado, LocalDate desde, LocalDate hasta);
+}

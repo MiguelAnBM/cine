@@ -13,10 +13,6 @@ import jakarta.validation.constraints.NotNull;
 @Entity 
 @Table (
     name = "funciones",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uq_funcion_sala_fecha_hora", 
-        columnNames = {"id_sala", "fecha", "hora_inicio"}
-    ),
     indexes = {
         @Index(name = "idx_funcion_fecha_hora", columnList = "fecha, hora_inicio"),
         @Index(name = "idx_funcion_pelicula_fecha", columnList = "id_pelicula, fecha")
@@ -57,6 +53,9 @@ public class Funcion {
     )
     private Sala sala;
     
+    // Que la fecha no sea pasada se valida al PROGRAMAR (FuncionRequest y FuncionServiceImpl),
+    // no aquí: la entidad se valida en cada UPDATE, y una función histórica debe seguir siendo válida
+    // (por ejemplo, para marcarla EN_CURSO o FINALIZADA cuando ya pasó su hora de inicio).
     @NotNull(message = "La fecha es obligatoria")
     @Column(nullable = false)
     private LocalDate fecha;
@@ -69,18 +68,18 @@ public class Funcion {
     @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoFuncion estado = EstadoFuncion.PROGRAMADA;
+    private EstadoFuncion estado;
 
     protected Funcion(){
 
     }
 
-    public Funcion(Pelicula pelicula, Sala sala, LocalDate fecha, LocalTime horaInicio, EstadoFuncion estado) {
+    public Funcion(Pelicula pelicula, Sala sala, LocalDate fecha, LocalTime horaInicio) {
         this.pelicula = pelicula;
         this.sala = sala;
         this.fecha = fecha;
         this.horaInicio = horaInicio;
-        this.estado = estado;
+        this.estado = EstadoFuncion.PROGRAMADA;
     }
 
     public Long getId() {
@@ -127,4 +126,3 @@ public class Funcion {
         this.estado = estado;
     }
 }
-

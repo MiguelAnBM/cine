@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Pattern;
     name = "detalles_boleto",
     uniqueConstraints = @UniqueConstraint(
         name = "uq_boleto_funcion_asiento", 
-        columnNames = {"id_funcion", "codigo_asiento"}
+        columnNames = {"id_funcion", "asiento_activo"}
     ),
     check = {
         @CheckConstraint(
@@ -25,6 +25,10 @@ import jakarta.validation.constraints.Pattern;
         @CheckConstraint(
             name = "chk_boleto_asiento",
             constraint = "REGEXP_LIKE(codigo_asiento, '^[A-H]([1-9]|10)$', 'c')"
+        ),
+        @CheckConstraint(
+            name = "chk_boleto_asiento_activo",
+            constraint = "asiento_activo IS NULL OR asiento_activo = codigo_asiento"
         )
     }
 )
@@ -71,6 +75,10 @@ public class DetalleBoleto {
     @Column(name = "codigo_asiento", nullable = false, length = 3)
     private String codigoAsiento;
 
+    // Igual a codigoAsiento mientras el boleto esté vigente; null cuando se anula la factura
+    @Column(name = "asiento_activo", length = 3)
+    private String asientoActivo;
+
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.00", message = "El valor no puede ser negativo")
     @Digits(integer = 8, fraction = 2, message = "El precio admite máximo {integer} enteros y {fraction} decimales")
@@ -88,7 +96,13 @@ public class DetalleBoleto {
 
         this.funcion = funcion;
         this.codigoAsiento = (codigoAsiento == null) ? null : codigoAsiento.trim().toUpperCase(Locale.ROOT);
+        this.asientoActivo = this.codigoAsiento;
         this.precioUnitario = funcion.getSala().getPrecioBoleto();   // copia del precio vigente
+    }
+
+
+    void liberarAsiento() {
+        this.asientoActivo = null;
     }
 
     public Long getId() {

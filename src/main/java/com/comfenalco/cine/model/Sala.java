@@ -52,17 +52,17 @@ public class Sala {
     @NotNull(message = "El estado de la sala es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private EstadoSala estado = EstadoSala.ACTIVA;
+    private EstadoSala estado;
 
     protected Sala(){
         
     }
     
-    public Sala(String nombre, TipoSala tipo, BigDecimal precioBoleto, EstadoSala estado) {
+    public Sala(String nombre, TipoSala tipo, BigDecimal precioBoleto) {
         this.nombre = nombre;
         this.tipo = tipo;
         this.precioBoleto = precioBoleto;
-        this.estado = estado;
+        this.estado = EstadoSala.ACTIVA;
     }
 
     public Long getId() {

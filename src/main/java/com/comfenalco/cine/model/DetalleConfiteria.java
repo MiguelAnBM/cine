@@ -72,9 +72,6 @@ public class DetalleConfiteria {
     @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 
-    @Column(name = "subtotal", precision = 10, scale = 2)
-    private BigDecimal subtotal;
-
     protected DetalleConfiteria() {
 
     }
@@ -90,11 +87,10 @@ public class DetalleConfiteria {
 
         this.productoConfiteria = productoConfiteria;
         this.cantidad = cantidad;
-        this.precioUnitario = (productoConfiteria == null) ? null : productoConfiteria.getPrecio();
-        this.subtotal = calcularSubtotal();
+        this.precioUnitario = productoConfiteria.getPrecio();
     }
 
-    // Para calcular antes de guardar, cuando "subtotal" todavía es null
+    // Subtotal de la línea (cantidad x precio unitario): no se guarda, se calcula
     public BigDecimal calcularSubtotal() {
 
         // Para evitar NullPointerException
@@ -128,10 +124,6 @@ public class DetalleConfiteria {
 
     public BigDecimal getPrecioUnitario() {
         return precioUnitario;
-    }
-
-    public BigDecimal getSubtotal() {
-        return subtotal;
     }
     
 }

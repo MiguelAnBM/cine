@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.hibernate.annotations.ColumnDefault;
 
+import com.comfenalco.cine.model.enums.EstadoFactura;
 import com.comfenalco.cine.model.enums.MetodoPago;
 
 import jakarta.persistence.*;
@@ -21,7 +22,12 @@ import jakarta.validation.constraints.Size;
     indexes = {
         @Index(name = "idx_factura_fecha", columnList = "fecha_hora"),
         @Index(name = "idx_factura_usuario_fecha", columnList = "id_usuario, fecha_hora")
-    }
+    },
+    check = @CheckConstraint(
+        name = "chk_factura_anulacion",
+        constraint = 
+            "(estado = 'EMITIDA' AND fecha_anulacion IS NULL) OR " +
+            "(estado = 'ANULADA' AND fecha_anulacion IS NOT NULL)")
 )
 public class Factura {
 
@@ -29,6 +35,11 @@ public class Factura {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_factura")
     private Long id;
+
+    // Control optimista: evita anular dos veces la misma factura en paralelo
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @NotNull(message = "El usuario no puede ser nulo")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,7 +55,7 @@ public class Factura {
     )
     private Usuario usuario;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
+    @ColumnDefault("CURRENT_TIMESTAMP(6)")
     @Column(name = "fecha_hora", nullable = false, updatable = false)
     private LocalDateTime fechaHora;
     
@@ -67,6 +78,16 @@ public class Factura {
 
     @OneToMany(mappedBy = "factura", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<DetalleConfiteria> productos = new ArrayList<>();
+
+    // Por si se anula una factura, para liberar asientos comprados
+    @NotNull
+    @ColumnDefault("'EMITIDA'")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 10)
+    private EstadoFactura estado;
+
+    @Column(name = "fecha_anulacion")
+    private LocalDateTime fechaAnulacion;
     
     protected Factura() {
         
@@ -78,6 +99,7 @@ public class Factura {
         this.metodoPago = metodoPago;
         this.nombreCliente = nombreCliente;
         this.correoCliente = correoCliente;
+        this.estado = EstadoFactura.EMITIDA;
     }
 
     @PrePersist
@@ -132,6 +154,22 @@ public class Factura {
         return Collections.unmodifiableList(boletos);
     }
 
+    public void anular() {
+        if (estado == EstadoFactura.ANULADA) {
+            throw new IllegalStateException("La factura ya está anulada");
+        }
+        this.estado = EstadoFactura.ANULADA;
+        this.fechaAnulacion = LocalDateTime.now();
+        boletos.forEach(DetalleBoleto::liberarAsiento);
+    }
+
+    public EstadoFactura getEstado() { 
+        return estado; 
+    }
+    public LocalDateTime getFechaAnulacion() { 
+        return fechaAnulacion; 
+    } 
+
     public Long getId() {
         return id;
     }
@@ -140,20 +178,12 @@ public class Factura {
         return usuario;
     }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
-
     public LocalDateTime getFechaHora() {
         return fechaHora;
     }
 
     public MetodoPago getMetodoPago() {
         return metodoPago;
-    }
-
-    public void setMetodoPago(MetodoPago metodoPago) {
-        this.metodoPago = metodoPago;
     }
 
     public String getNombreCliente() {
