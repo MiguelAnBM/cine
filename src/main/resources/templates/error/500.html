@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Error Interno', 'error', ~{::#contenidoError})}">
+<body>
+  <div id="contenidoError" style="max-width: 600px; margin: 40px auto; text-align: center;">
+    <div class="card card-pad-lg empty-state">
+      <span class="icon icon-x" style="font-size: 56px; margin-bottom: 16px; color: var(--red-500); opacity: 0.9;"></span>
+      <h1 style="font-family: var(--font-display); font-size: 52px; line-height: 1; margin: 0 0 8px; color: var(--red-500);">500</h1>
+      <h2 style="font-size: 20px; margin: 0 0 8px;">Error interno del servidor</h2>
+      <p style="color: var(--muted); font-size: 14px; margin: 0 0 24px;">Ha ocurrido un inconveniente al procesar tu solicitud. Por favor intenta de nuevo.</p>
+      <a class="btn btn-primary" th:href="@{/}">
+        <span class="icon icon-dashboard"></span> Volver al panel de inicio
+      </a>
+    </div>
+  </div>
+</body>
+</html>

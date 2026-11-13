@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina(${esEdicion ? 'Editar Taquillero' : 'Nuevo Taquillero'}, 'administracion', ~{::#contenidoFormTaquillero})}">
+<body>
+  <div id="contenidoFormTaquillero">
+    <div class="form-card">
+      <div style="margin-bottom: 24px;">
+        <span class="eyebrow" style="color: var(--navy-700); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">
+          <span class="icon icon-users"></span> Personal de Taquilla
+        </span>
+        <h2 style="font-family: var(--font-display); font-size: 24px; margin: 4px 0 0;"
+            th:text="${esEdicion ? 'Editar Datos del Taquillero' : 'Registrar Nuevo Taquillero'}">
+          Nuevo Taquillero
+        </h2>
+        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">
+          Completa el nombre del personal de mostrador y ventas.
+        </p>
+      </div>
+
+      <form th:action="${esEdicion} ? @{/administracion/taquilleros/{id}(id=${idTaquillero})} : @{/administracion/taquilleros}"
+            th:object="${taquilleroFormulario}" method="post" class="form-grid">
+
+        <!-- Nombre Completo -->
+        <div class="field">
+          <label for="nombreCompleto">Nombre completo del taquillero *</label>
+          <input type="text" id="nombreCompleto" th:field="*{nombreCompleto}" placeholder="Ej. Laura Gómez" required />
+          <p class="field-error" th:if="${#fields.hasErrors('nombreCompleto')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{nombreCompleto}">Error en nombre</span>
+          </p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="form-actions">
+          <a class="btn btn-ghost" th:href="@{/administracion/taquilleros}">
+            <span class="icon icon-x"></span> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon icon-check"></span>
+            <span th:text="${esEdicion ? 'Actualizar Taquillero' : 'Guardar Taquillero'}">Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

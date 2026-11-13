@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+  <!-- ========================================================================
+       Mensajes flash de éxito y error con alertas estilizadas
+       ======================================================================== -->
+  <div th:fragment="flashMensajes" class="flash-container">
+    <div th:if="${exito}" class="alert alert-success" role="alert">
+      <span class="icon icon-check"></span>
+      <span th:text="${exito}">Operación realizada correctamente.</span>
+    </div>
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+      <span class="icon icon-x"></span>
+      <span th:text="${error}">Ha ocurrido un error en la solicitud.</span>
+    </div>
+  </div>
+</body>
+</html>

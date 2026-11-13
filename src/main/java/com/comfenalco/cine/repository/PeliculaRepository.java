@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.comfenalco.cine.model.Pelicula;
 import com.comfenalco.cine.model.enums.EstadoPelicula;
-import com.comfenalco.cine.model.enums.Genero;
 
 import jakarta.persistence.LockModeType;
 
@@ -21,10 +20,6 @@ public interface PeliculaRepository extends JpaRepository<Pelicula, Long> {
     Optional<Pelicula> findByIdForUpdate(@Param("id") Long id);
 
     List<Pelicula> findByEstado(EstadoPelicula estado);
-
-    List<Pelicula> findByGeneroAndEstado(Genero genero, EstadoPelicula estado);
-
-    List<Pelicula> findByTituloContainingIgnoreCaseAndEstado(String titulo, EstadoPelicula estado);
 
     boolean existsByTituloIgnoreCase(String titulo);
     

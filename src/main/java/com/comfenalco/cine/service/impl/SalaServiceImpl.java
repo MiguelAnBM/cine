@@ -1,18 +1,20 @@
 package com.comfenalco.cine.service.impl;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.comfenalco.cine.service.SalaService;
+import com.comfenalco.cine.service.FuncionVendibilidad;
 import com.comfenalco.cine.dto.request.SalaRequest;
 import com.comfenalco.cine.dto.response.SalaResponse;
 import com.comfenalco.cine.exception.NoEncontradoException;
 import com.comfenalco.cine.exception.ReglaNegocioException;
 import com.comfenalco.cine.model.Sala;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
 import com.comfenalco.cine.model.enums.EstadoSala;
 import com.comfenalco.cine.repository.FuncionRepository;
 import com.comfenalco.cine.repository.SalaRepository;
@@ -23,10 +25,12 @@ public class SalaServiceImpl implements SalaService {
 
     private final SalaRepository salaRepository;
     private final FuncionRepository funcionRepository;
+    private final Clock reloj;
 
-    public SalaServiceImpl(SalaRepository salaRepository, FuncionRepository funcionRepository) {
+    public SalaServiceImpl(SalaRepository salaRepository, FuncionRepository funcionRepository, Clock reloj) {
         this.salaRepository = salaRepository;
         this.funcionRepository = funcionRepository;
+        this.reloj = reloj;
     }
 
     @Override
@@ -67,7 +71,6 @@ public class SalaServiceImpl implements SalaService {
 
         Sala sala = obtenerEntidad(id);
 
-        // AndIdNot: la sala no se compara consigo misma
         if (salaRepository.existsByNombreIgnoreCaseAndIdNot(request.nombre(), id)) {
             throw new ReglaNegocioException("Ya existe otra sala con ese nombre");
         }
@@ -76,7 +79,7 @@ public class SalaServiceImpl implements SalaService {
         sala.setTipo(request.tipo());
         sala.setPrecioBoleto(request.precioBoleto());
 
-        return SalaResponse.de(sala);   // sin save(): Hibernate guarda los cambios al terminar la transacción
+        return SalaResponse.de(sala);
     }
 
     @Override
@@ -87,14 +90,21 @@ public class SalaServiceImpl implements SalaService {
             .orElseThrow(() -> new NoEncontradoException("La sala no existe"));
 
         if (sala.getEstado() == nuevoEstado) {
-            return;   // nada que cambiar
+            return;
         }
 
-        if (nuevoEstado == EstadoSala.INACTIVA
-                && funcionRepository.existsBySalaIdAndEstadoAndFechaGreaterThanEqual(
-                        id, EstadoFuncion.PROGRAMADA, LocalDate.now())) {
-            throw new ReglaNegocioException(
-                    "No se puede desactivar: la sala tiene funciones programadas");
+        if (nuevoEstado == EstadoSala.INACTIVA) {
+            LocalDateTime ahora = LocalDateTime.now(reloj);
+            boolean tieneFuncionVigente = funcionRepository.findBySalaIdAndFechaGreaterThanEqual(
+                    id, ahora.toLocalDate()).stream()
+                    .anyMatch(f -> !FuncionVendibilidad.haFinalizado(
+                            LocalDateTime.of(f.getFecha(), f.getHoraInicio()),
+                            f.getPelicula().duracionEnMinutos(),
+                            ahora));
+            if (tieneFuncionVigente) {
+                throw new ReglaNegocioException(
+                        "No se puede desactivar: la sala tiene funciones vigentes");
+            }
         }
 
         sala.setEstado(nuevoEstado);

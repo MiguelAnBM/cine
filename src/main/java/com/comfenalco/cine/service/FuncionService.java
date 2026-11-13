@@ -9,21 +9,17 @@ import org.springframework.data.domain.Pageable;
 import com.comfenalco.cine.dto.request.FuncionRequest;
 import com.comfenalco.cine.dto.response.FuncionResponse;
 import com.comfenalco.cine.dto.response.PeliculaResponse;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
 
 public interface FuncionService {
-
-    List<FuncionResponse> cartelera(LocalDate fecha);
 
     // Todas las funciones, de la más reciente a la más antigua (pantalla Funciones)
     Page<FuncionResponse> listar(Pageable pageable);
 
-    // Las próximas funciones programadas que aún no empiezan (pantalla Inicio)
+    // Las próximas funciones programadas que aún no empiezan
     List<FuncionResponse> proximas(int limite);
 
-    List<FuncionResponse> proximasPorPelicula(Long idPelicula);
-
-    List<PeliculaResponse> peliculasEnCartelera();
+    // Las próximas funciones programadas del día actual que aún no empiezan (pantalla Inicio)
+    List<FuncionResponse> proximasDeHoy(int limite);
 
     FuncionResponse buscarPorId(Long id);
 
@@ -31,9 +27,9 @@ public interface FuncionService {
 
     FuncionResponse editar(Long id, FuncionRequest request);
 
-    // Devuelve cuántas facturas tienen boletos de esta función (para avisar de devoluciones)
-    long cancelar(Long id);
+    // Valida que la función sea vendible antes de mostrar el mapa de asientos
+    void validarVendible(Long idFuncion);
 
-    // Para EN_CURSO y FINALIZADA. Para cancelar se usa cancelar()
-    void cambiarEstado(Long id, EstadoFuncion nuevoEstado);
+    // Cuenta cuántas funciones activas o programadas hay para una fecha dada
+    long contarFuncionesDelDia(LocalDate fecha);
 }

@@ -2,13 +2,10 @@ package com.comfenalco.cine.service.impl;
 
 import java.util.List;
 
-import org.springframework.data.domain.Sort;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.comfenalco.cine.service.UsuarioService;
-import com.comfenalco.cine.dto.request.CambiarContrasenaRequest;
 import com.comfenalco.cine.dto.request.UsuarioCrearRequest;
 import com.comfenalco.cine.dto.request.UsuarioEditarRequest;
 import com.comfenalco.cine.dto.response.UsuarioResponse;
@@ -24,16 +21,29 @@ import com.comfenalco.cine.repository.UsuarioRepository;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public List<UsuarioResponse> listar() {
-        return usuarioRepository.findAll(Sort.by("nombreCompleto")).stream()
+    public List<UsuarioResponse> listarTaquilleros() {
+        // Obtenemos todos los usuarios cuyo rol sea TAQUILLERO (tanto activos como inactivos)
+        List<Usuario> listaDeTaquilleros = usuarioRepository
+                .findByRolOrderByNombreCompleto(RolUsuario.TAQUILLERO);
+
+        return listaDeTaquilleros.stream()
+                .map(UsuarioResponse::de)
+                .toList();
+    }
+
+    @Override
+    public List<UsuarioResponse> listarTaquillerosActivos() {
+        // Obtenemos únicamente los taquilleros que se encuentren en estado ACTIVO (para ventas)
+        List<Usuario> listaDeTaquillerosActivos = usuarioRepository
+                .findByRolAndEstadoOrderByNombreCompleto(RolUsuario.TAQUILLERO, EstadoUsuario.ACTIVO);
+
+        return listaDeTaquillerosActivos.stream()
                 .map(UsuarioResponse::de)
                 .toList();
     }
@@ -51,37 +61,15 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    public List<UsuarioResponse> listarPorEstado(EstadoUsuario estado) {
-        return usuarioRepository.findByEstadoOrderByNombreCompleto(estado).stream()
-                .map(UsuarioResponse::de)
-                .toList();
-    }
-
-    @Override
     @Transactional
     public UsuarioResponse crear(UsuarioCrearRequest request) {
 
-        if (usuarioRepository.existsByUsernameIgnoreCase(request.username())) {
-            throw new ReglaNegocioException("Ya existe un usuario con ese nombre de usuario");
-        }
-
-        String hash = null;
-
-        if (request.rol() == RolUsuario.ADMINISTRADOR) {
-            if (request.contrasena() == null) {
-                throw new ReglaNegocioException("El administrador debe tener contraseña");
-            }
-            hash = passwordEncoder.encode(request.contrasena());
-
-        } else if (request.contrasena() != null) {
-            throw new ReglaNegocioException("El taquillero no usa contraseña");
-        }
-
+        // Siempre se crea un taquillero: sin username y sin contraseña
         Usuario usuario = new Usuario(
                 request.nombreCompleto(),
-                request.username(),
-                request.rol(),
-                hash);
+                "", // username vacío: no se usa para taquilleros
+                RolUsuario.TAQUILLERO,
+                null);
 
         return UsuarioResponse.de(usuarioRepository.save(usuario));
     }
@@ -92,32 +80,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         Usuario usuario = obtenerEntidad(id);
 
-        if (usuarioRepository.existsByUsernameIgnoreCaseAndIdNot(request.username(), id)) {
-            throw new ReglaNegocioException("Ya existe otro usuario con ese nombre de usuario");
-        }
-
         // El rol no se puede cambiar
         usuario.setNombreCompleto(request.nombreCompleto());
-        usuario.setUsername(request.username());
 
         return UsuarioResponse.de(usuario);   // sin save(): Hibernate guarda al terminar la transacción
-    }
-
-    @Override
-    @Transactional
-    public void cambiarContrasena(Long id, CambiarContrasenaRequest request) {
-
-        Usuario usuario = obtenerEntidad(id);
-
-        if (usuario.getRol() != RolUsuario.ADMINISTRADOR) {
-            throw new ReglaNegocioException("Solo los administradores tienen contraseña");
-        }
-
-        if (!passwordEncoder.matches(request.contrasenaActual(), usuario.getContrasenaHash())) {
-            throw new ReglaNegocioException("La contraseña actual no es correcta");
-        }
-
-        usuario.setContrasenaHash(passwordEncoder.encode(request.contrasenaNueva()));
     }
 
     @Override

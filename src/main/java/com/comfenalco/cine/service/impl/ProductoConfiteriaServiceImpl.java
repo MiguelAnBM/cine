@@ -1,6 +1,10 @@
 package com.comfenalco.cine.service.impl;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,35 +30,18 @@ public class ProductoConfiteriaServiceImpl implements ProductoConfiteriaService 
     }
 
     @Override
-    public List<ProductoConfiteriaResponse> listar() {
-        return productoRepository.findAll().stream()
-                .map(ProductoConfiteriaResponse::de)
-                .toList();
-    }
-
-    @Override
     public ProductoConfiteriaResponse buscarPorId(Long id) {
         return ProductoConfiteriaResponse.de(obtenerEntidad(id));
     }
 
     @Override
-    public List<ProductoConfiteriaResponse> listarPorEstado(EstadoProducto estado) {
-        return productoRepository.findByEstadoOrderByNombre(estado).stream()
-                .map(ProductoConfiteriaResponse::de)
-                .toList();
-    }
-
-    @Override
-    public List<ProductoConfiteriaResponse> listarPorCategoria(CategoriaProducto categoria, EstadoProducto estado) {
-        return productoRepository.findByCategoriaAndEstadoOrderByNombre(categoria, estado).stream()
-                .map(ProductoConfiteriaResponse::de)
-                .toList();
-    }
-
-    @Override
-    public List<ProductoConfiteriaResponse> buscarPorNombre(String nombre, EstadoProducto estado) {
-        String filtro = (nombre == null) ? "" : nombre.trim();
-        return productoRepository.findByNombreContainingIgnoreCaseAndEstadoOrderByNombre(filtro, estado).stream()
+    public List<ProductoConfiteriaResponse> listarPorCategoria(CategoriaProducto categoria) {
+        if (categoria == null) {
+            return productoRepository.findAllByOrderByNombre().stream()
+                    .map(ProductoConfiteriaResponse::de)
+                    .toList();
+        }
+        return productoRepository.findByCategoriaOrderByNombre(categoria).stream()
                 .map(ProductoConfiteriaResponse::de)
                 .toList();
     }
@@ -108,6 +95,26 @@ public class ProductoConfiteriaServiceImpl implements ProductoConfiteriaService 
         }
 
         producto.setEstado(nuevoEstado);
+    }
+
+    @Override
+    public Map<Long, ProductoConfiteriaResponse> buscarActivosPorIds(Collection<Long> ids) {
+
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+
+        // Una sola consulta batch: todos los productos activos cuyos IDs están en la lista
+        List<ProductoConfiteria> productos = productoRepository.findByIdInAndEstado(
+                ids, EstadoProducto.ACTIVO);
+
+        return productos.stream()
+                .collect(Collectors.toMap(
+                        ProductoConfiteria::getId,
+                        ProductoConfiteriaResponse::de,
+                        (a, b) -> a, // si hubiera duplicados de ID, nos quedamos con el primero
+                        LinkedHashMap::new // preserva orden de inserción
+                ));
     }
 
     private ProductoConfiteria obtenerEntidad(Long id) {

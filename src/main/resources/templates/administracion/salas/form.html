@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina(${esEdicion ? 'Editar Sala' : 'Nueva Sala'}, 'administracion', ~{::#contenidoFormSala})}">
+<body>
+  <div id="contenidoFormSala">
+    <div class="form-card">
+      <div style="margin-bottom: 24px;">
+        <span class="eyebrow" style="color: var(--blue-600); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">
+          <span class="icon icon-room"></span> Administración de Salas
+        </span>
+        <h2 style="font-family: var(--font-display); font-size: 24px; margin: 4px 0 0;"
+            th:text="${esEdicion ? 'Editar Configuración de Sala' : 'Registrar Nueva Sala'}">
+          Nueva Sala
+        </h2>
+        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">
+          Configura el nombre, tecnología de proyección y precio unitario de entrada.
+        </p>
+      </div>
+
+      <form th:action="${esEdicion} ? @{/administracion/salas/{id}(id=${idSala})} : @{/administracion/salas}"
+            th:object="${salaFormulario}" method="post" class="form-grid">
+
+        <!-- Nombre -->
+        <div class="field">
+          <label for="nombreSala">Nombre de la sala *</label>
+          <input type="text" id="nombreSala" th:field="*{nombre}" placeholder="Ej. Sala 1 - Macro XE" required />
+          <p class="field-error" th:if="${#fields.hasErrors('nombre')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{nombre}">Error en nombre</span>
+          </p>
+        </div>
+
+        <!-- Tipo de Sala y Precio en fila -->
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="tipoSala">Tipo de experiencia *</label>
+            <select id="tipoSala" th:field="*{tipo}" required>
+              <option th:each="t : ${tiposDeSala}" th:value="${t}" th:text="${t != null ? t.etiqueta : '2D'}">2D</option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('tipo')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{tipo}">Error en tipo</span>
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="precioBoleto">Precio del boleto ($) *</label>
+            <input type="number" step="0.01" id="precioBoleto" th:field="*{precioBoleto}" placeholder="18000" required />
+            <p class="field-hint">Capacidad estándar: 80 butacas</p>
+            <p class="field-error" th:if="${#fields.hasErrors('precioBoleto')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{precioBoleto}">Error en precio</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="form-actions">
+          <a class="btn btn-ghost" th:href="@{/administracion/salas}">
+            <span class="icon icon-x"></span> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon icon-check"></span>
+            <span th:text="${esEdicion ? 'Actualizar Sala' : 'Guardar Sala'}">Guardar Sala</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

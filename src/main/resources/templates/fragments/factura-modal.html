@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+  <!-- ========================================================================
+       Modal Flotante de Factura con fondo blur
+       ======================================================================== -->
+  <div th:fragment="modalFactura"
+       th:if="${facturaEmitida != null}"
+       id="modalFacturaBackdrop"
+       class="factura-modal-backdrop"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="tituloModalFactura">
+    
+    <div class="factura-modal-card" onclick="event.stopPropagation()">
+      <!-- Encabezado del Comprobante -->
+      <div class="factura-modal-header">
+        <div class="factura-header-brand">
+          <div class="factura-badge-icon">
+            <span class="icon icon-check"></span>
+          </div>
+          <div>
+            <span class="factura-eyebrow">Cine Comfenalco · Venta Exitosa</span>
+            <h2 id="tituloModalFactura" class="factura-title" th:text="${facturaEmitida.estado?.name() == 'ANULADA'} ? 'Factura Anulada' : 'Factura de Venta'">Factura de Venta</h2>
+          </div>
+        </div>
+        <button type="button"
+                class="factura-btn-close"
+                onclick="cerrarModalFactura()"
+                title="Cerrar modal"
+                aria-label="Cerrar modal">
+          <span class="icon icon-x"></span>
+        </button>
+      </div>
+
+      <!-- Resumen Principal en Cuadrícula -->
+      <div class="factura-modal-body">
+        <div class="factura-meta-grid" th:if="${facturaEmitida != null}">
+          <div class="factura-meta-item">
+            <span class="factura-meta-label">No. Factura</span>
+            <strong class="factura-meta-val" th:text="${facturaEmitida.id != null ? '#FACT-' + #numbers.formatInteger(facturaEmitida.id, 5) : 'N/A'}">#FACT-00001</strong>
+          </div>
+          <div class="factura-meta-item">
+            <span class="factura-meta-label">Fecha y Hora</span>
+            <strong class="factura-meta-val" th:text="${facturaEmitida.fechaHora != null ? #temporals.format(facturaEmitida.fechaHora, 'dd/MM/yyyy HH:mm') : 'N/A'}">11/11/2026 19:45</strong>
+          </div>
+          <div class="factura-meta-item">
+            <span class="factura-meta-label">Taquillero</span>
+            <strong class="factura-meta-val" th:text="${facturaEmitida.taquillero}">Taquillero</strong>
+          </div>
+          <div class="factura-meta-item">
+            <span class="factura-meta-label">Método de Pago</span>
+            <span class="badge badge-info" th:text="${facturaEmitida.metodoPago}">EFECTIVO</span>
+          </div>
+          <div class="factura-meta-item" style="grid-column: 1 / -1;" th:if="${facturaEmitida.nombreCliente != null and !#strings.isEmpty(facturaEmitida.nombreCliente)}">
+            <span class="factura-meta-label">Cliente</span>
+            <span class="factura-meta-val">
+              <strong th:text="${facturaEmitida.nombreCliente}">Cliente</strong>
+              <small th:if="${facturaEmitida.correoCliente != null and !#strings.isEmpty(facturaEmitida.correoCliente)}"
+                     th:text="'(' + ${facturaEmitida.correoCliente} + ')'"
+                     style="color: var(--muted); margin-left: 4px;"></small>
+            </span>
+          </div>
+        </div>
+
+        <!-- Sección de Boletos si existen -->
+        <div class="factura-items-section" th:if="${facturaEmitida.boletos != null and !#lists.isEmpty(facturaEmitida.boletos)}">
+          <div class="factura-section-subtitle">
+            <span class="icon icon-ticket" style="color: var(--blue-600);"></span>
+            <span>Boletos de Cine (<span th:text="${#lists.size(facturaEmitida.boletos)}">0</span>)</span>
+          </div>
+          <div class="factura-table-wrapper">
+            <table class="factura-items-table">
+              <thead>
+                <tr>
+                  <th>Película / Sala</th>
+                  <th>Función</th>
+                  <th>Butaca</th>
+                  <th style="text-align: right;">Precio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="b : ${facturaEmitida.boletos}">
+                  <td>
+                    <strong th:text="${b.pelicula}">Película</strong>
+                    <div class="factura-item-sub" th:text="${b.sala}">Sala</div>
+                  </td>
+                  <td th:text="${#temporals.format(b.fecha, 'dd/MM')} + ' ' + ${b.horaInicio}">Fecha/Hora</td>
+                  <td>
+                    <span class="badge badge-warning" th:text="${b.asiento}">A1</span>
+                  </td>
+                  <td style="text-align: right; font-weight: 600;" th:text="'$' + ${#numbers.formatInteger(b.precio,1,'POINT')}">$0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sección de Confitería si existen -->
+        <div class="factura-items-section" th:if="${facturaEmitida.productos != null and !#lists.isEmpty(facturaEmitida.productos)}">
+          <div class="factura-section-subtitle">
+            <span class="icon icon-popcorn" style="color: var(--warning);"></span>
+            <span>Productos de Cafetería (<span th:text="${#lists.size(facturaEmitida.productos)}">0</span>)</span>
+          </div>
+          <div class="factura-table-wrapper">
+            <table class="factura-items-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th style="text-align: center;">Cant.</th>
+                  <th style="text-align: right;">Unitario</th>
+                  <th style="text-align: right;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="p : ${facturaEmitida.productos}">
+                  <td th:text="${p.nombre}">Producto</td>
+                  <td style="text-align: center; font-weight: 600;" th:text="${p.cantidad}">1</td>
+                  <td style="text-align: right; color: var(--muted);" th:text="'$' + ${#numbers.formatInteger(p.precioUnitario,1,'POINT')}">$0</td>
+                  <td style="text-align: right; font-weight: 600;" th:text="'$' + ${#numbers.formatInteger(p.subtotal,1,'POINT')}">$0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Resumen de Totales -->
+        <div class="factura-totals-box" th:if="${facturaEmitida != null}">
+          <div class="factura-total-row">
+            <span>Total Facturado:</span>
+            <strong class="factura-total-amount" th:text="'$' + ${#numbers.formatInteger(facturaEmitida.total,1,'POINT')}">$0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones de la Factura: Descargar TXT, Imprimir, Cerrar -->
+      <div class="factura-modal-footer" th:if="${facturaEmitida != null}">
+        <a class="btn btn-secondary btn-sm"
+           th:href="@{/facturas/{id}/descargar-txt(id=${facturaEmitida.id})}"
+           id="btnDescargarTxt"
+           title="Descargar factura en texto plano (.txt)">
+          <span class="icon icon-download"></span> Descargar Factura (.txt)
+        </a>
+
+        <button type="button"
+                class="btn btn-primary btn-sm"
+                th:onclick="'imprimirFactura(' + ${facturaEmitida.id} + ')'"
+                id="btnImprimirFactura"
+                title="Mandar a imprimir comprobante limpio">
+          <span class="icon icon-printer"></span> Imprimir Factura
+        </button>
+
+        <button type="button"
+                class="btn btn-ghost btn-sm"
+                onclick="cerrarModalFactura()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+
+    <!-- Script integrado del modal -->
+    <script>
+      function imprimirFactura(id) {
+        var url = '/facturas/' + id + '/imprimir';
+        var w = window.open(url, 'ImprimirFactura', 'width=520,height=700,menubar=no,toolbar=no,location=no,status=no');
+        if (w) {
+          w.focus();
+        }
+      }
+
+      function cerrarModalFactura() {
+        var modal = document.getElementById('modalFacturaBackdrop');
+        if (modal) {
+          modal.classList.add('is-closing');
+          setTimeout(function() {
+            modal.remove();
+          }, 180);
+        }
+      }
+
+      // Cerrar al presionar la tecla Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          cerrarModalFactura();
+        }
+      });
+
+      // Cerrar al hacer click fuera de la tarjeta
+      (function() {
+        var backdrop = document.getElementById('modalFacturaBackdrop');
+        if (backdrop) {
+          backdrop.addEventListener('click', function(e) {
+            if (e.target === backdrop) {
+              cerrarModalFactura();
+            }
+          });
+        }
+      })();
+    </script>
+  </div>
+</body>
+</html>
+

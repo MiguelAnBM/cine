@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina(${esEdicion ? 'Editar Película' : 'Nueva Película'}, 'cartelera', ~{::#contenidoFormPelicula})}">
+<body>
+  <div id="contenidoFormPelicula">
+    <div class="form-card">
+      <div style="margin-bottom: 24px;">
+        <span class="eyebrow" style="color: var(--red-500); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">
+          <span class="icon icon-film"></span> Catálogo de Películas
+        </span>
+        <h2 style="font-family: var(--font-display); font-size: 24px; margin: 4px 0 0;"
+            th:text="${esEdicion ? 'Editar Información de la Película' : 'Registrar Nueva Película'}">
+          Nueva Película
+        </h2>
+        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">
+          Completa los datos de la película para actualizar la cartelera del cine.
+        </p>
+      </div>
+
+      <form th:action="${esEdicion} ? @{/cartelera/{id}(id=${idPelicula})} : @{/cartelera}"
+            th:object="${peliculaFormulario}" method="post" class="form-grid">
+
+        <!-- Título -->
+        <div class="field">
+          <label for="titulo">Título de la película *</label>
+          <input type="text" id="titulo" th:field="*{titulo}" placeholder="Ej. Dune: Parte Dos" required />
+          <p class="field-error" th:if="${#fields.hasErrors('titulo')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{titulo}">Error en título</span>
+          </p>
+        </div>
+
+        <!-- Sinopsis -->
+        <div class="field">
+          <label for="sinopsis">Sinopsis de la trama *</label>
+          <textarea id="sinopsis" th:field="*{sinopsis}" rows="3" placeholder="Describe brevemente la trama y temática principal..." required></textarea>
+          <p class="field-error" th:if="${#fields.hasErrors('sinopsis')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{sinopsis}">Error en sinopsis</span>
+          </p>
+        </div>
+
+        <!-- Duración, Clasificación y Género en fila -->
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="duracion">Duración (Formato: #H #M) *</label>
+            <input type="text" id="duracion" th:field="*{duracion}" placeholder="Ej. 2H 15M" required />
+            <p class="field-hint">Ejemplo: 1H 45M o 2H 30M</p>
+            <p class="field-error" th:if="${#fields.hasErrors('duracion')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{duracion}">Error en duración</span>
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="clasificacion">Clasificación por edad *</label>
+            <select id="clasificacion" th:field="*{clasificacion}">
+              <option th:each="c : ${listaClasificaciones}" th:value="${c}" th:text="${c}">Clasificación</option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('clasificacion')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{clasificacion}">Error en clasificación</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="genero">Género cinematográfico *</label>
+            <select id="genero" th:field="*{genero}">
+              <option th:each="g : ${listaGeneros}" th:value="${g}" th:text="${g}">Género</option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('genero')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{genero}">Error en género</span>
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="imagenUrl">URL del póster (opcional)</label>
+            <input type="url" id="imagenUrl" th:field="*{imagenUrl}" placeholder="https://ejemplo.com/poster.jpg" />
+            <p class="field-hint">Si se omite, se usará el póster por defecto</p>
+            <p class="field-error" th:if="${#fields.hasErrors('imagenUrl')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{imagenUrl}">Error en imagen</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Acciones del Formulario -->
+        <div class="form-actions">
+          <a class="btn btn-ghost" th:href="@{/cartelera}">
+            <span class="icon icon-x"></span> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon icon-check"></span>
+            <span th:text="${esEdicion ? 'Actualizar Película' : 'Guardar Película'}">Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

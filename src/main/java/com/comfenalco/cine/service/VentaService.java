@@ -1,11 +1,15 @@
 package com.comfenalco.cine.service;
 
-import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import com.comfenalco.cine.dto.response.FacturaAdminResponse;
 import com.comfenalco.cine.dto.response.FacturaResponse;
 import com.comfenalco.cine.dto.response.FacturaResumenResponse;
 import com.comfenalco.cine.dto.request.VentaRequest;
+import com.comfenalco.cine.model.enums.EstadoFactura;
 
 public interface VentaService {
 
@@ -14,7 +18,16 @@ public interface VentaService {
 
     FacturaResponse buscarPorId(Long id);
 
-    List<FacturaResumenResponse> listarPorRango(LocalDate desde, LocalDate hasta);
+    // Lista las facturas emitidas por un taquillero paginadas para que el administrador pueda anularlas
+    Page<FacturaResumenResponse> listarEmitidasPorTaquillero(Long idTaquillero, Pageable pageable);
+
+    // Todas las facturas con filtros opcionales para el panel de administración
+    Page<FacturaAdminResponse> listarFacturasFiltradas(Long idTaquillero, EstadoFactura estado,
+                                                       LocalDateTime desde, LocalDateTime hasta,
+                                                       Pageable pageable);
 
     FacturaResponse anular(Long idUsuario, Long idFactura);
+
+    /** Genera el texto plano con el comprobante de la factura para descarga o impresión. */
+    String generarTextoFactura(FacturaResponse factura);
 }

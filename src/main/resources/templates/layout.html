@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="pagina(titulo, seccionActiva, contenido)" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#26255d">
+  <title th:text="${titulo} + ' | Cine Comfenalco'">Cine Comfenalco</title>
+  <!-- Script temprano contra FOUC (evita el destello en blanco antes de renderizar modo oscuro) -->
+  <script>
+    (function () {
+      try {
+        var tema = localStorage.getItem("cine_tema") || localStorage.getItem("cine_theme");
+        if (tema === "dark" || (!tema && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/icons.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <link rel="stylesheet" th:href="@{/css/pages.css}">
+  <script th:src="@{/js/app.js}" defer></script>
+  <script th:src="@{/js/asientos.js}" defer></script>
+</head>
+<body>
+  <!-- Checkbox de tema oscuro/claro -->
+  <input type="checkbox" id="theme-toggle" class="theme-toggle-input" aria-label="Activar tema oscuro">
+
+  <div class="app-shell">
+    <!-- Sidebar fija/estática presente en todos los módulos -->
+    <aside th:replace="~{fragments/sidebar :: sidebar(${seccionActiva})}"></aside>
+
+    <div class="app-main">
+      <!-- Topbar fija/estática presente en todos los módulos -->
+      <header th:replace="~{fragments/topbar :: topbar(${seccionActiva}, ${titulo}, null)}"></header>
+
+      <main class="page-content">
+        <!-- Fragmento de mensajes flash -->
+        <div th:replace="~{fragments/flash :: flashMensajes}"></div>
+
+        <!-- Contenido dinámico del módulo -->
+        <div th:replace="${contenido}"></div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.comfenalco.cine.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,10 +15,11 @@ public interface ProductoConfiteriaRepository extends JpaRepository<ProductoConf
 
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
 
-    List<ProductoConfiteria> findByEstadoOrderByNombre(EstadoProducto estado);
+    List<ProductoConfiteria> findAllByOrderByNombre();
 
-    List<ProductoConfiteria> findByCategoriaAndEstadoOrderByNombre(CategoriaProducto categoria, EstadoProducto estado);
+    List<ProductoConfiteria> findByCategoriaOrderByNombre(CategoriaProducto categoria);
 
-    List<ProductoConfiteria> findByNombreContainingIgnoreCaseAndEstadoOrderByNombre(
-            String nombre, EstadoProducto estado);
+    // Devuelve productos cuyos IDs están en la lista y cuyo estado coincide.
+    // Se usa para cargar en lote los productos del carrito (una consulta, sin N+1).
+    List<ProductoConfiteria> findByIdInAndEstado(Collection<Long> ids, EstadoProducto estado);
 }

@@ -3,7 +3,6 @@ package com.comfenalco.cine.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.comfenalco.cine.service.ReporteService;
+import com.comfenalco.cine.utils.ValidadorRango;
 import com.comfenalco.cine.dto.response.FuncionTaquilleraResponse;
 import com.comfenalco.cine.dto.response.OcupacionSalaResponse;
 import com.comfenalco.cine.dto.response.ResumenVentasResponse;
@@ -25,18 +25,18 @@ import com.comfenalco.cine.dto.response.VentaPorProductoResponse;
 import com.comfenalco.cine.dto.response.VentaPorTaquilleroResponse;
 import com.comfenalco.cine.exception.ReglaNegocioException;
 import com.comfenalco.cine.model.enums.EstadoFactura;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
 import com.comfenalco.cine.repository.DetalleBoletoRepository;
 import com.comfenalco.cine.repository.DetalleConfiteriaRepository;
 import com.comfenalco.cine.repository.FacturaRepository;
 import com.comfenalco.cine.repository.FuncionRepository;
 import com.comfenalco.cine.repository.SalaRepository;
 
+import java.time.Clock;
+
 @Service
 @Transactional(readOnly = true)
 public class ReporteServiceImpl implements ReporteService {
 
-    private static final int MAX_DIAS_CONSULTA = 366;
     private static final int MAX_LIMITE = 50;
 
     private final FacturaRepository facturaRepository;
@@ -44,23 +44,26 @@ public class ReporteServiceImpl implements ReporteService {
     private final DetalleConfiteriaRepository detalleConfiteriaRepository;
     private final FuncionRepository funcionRepository;
     private final SalaRepository salaRepository;
+    private final Clock reloj;
 
     public ReporteServiceImpl(FacturaRepository facturaRepository,
                               DetalleBoletoRepository detalleBoletoRepository,
                               DetalleConfiteriaRepository detalleConfiteriaRepository,
                               FuncionRepository funcionRepository,
-                              SalaRepository salaRepository) {
+                              SalaRepository salaRepository,
+                              Clock reloj) {
         this.facturaRepository = facturaRepository;
         this.detalleBoletoRepository = detalleBoletoRepository;
         this.detalleConfiteriaRepository = detalleConfiteriaRepository;
         this.funcionRepository = funcionRepository;
         this.salaRepository = salaRepository;
+        this.reloj = reloj;
     }
 
     @Override
     public ResumenVentasResponse resumen(LocalDate desde, LocalDate hasta) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         LocalDateTime inicio = desde.atStartOfDay();
         LocalDateTime fin = hasta.plusDays(1).atStartOfDay();   // rango [inicio, fin)
 
@@ -73,13 +76,13 @@ public class ReporteServiceImpl implements ReporteService {
                 facturaRepository.countByEstadoAndFechaHoraGreaterThanEqualAndFechaHoraLessThan(
                         EstadoFactura.EMITIDA, inicio, fin),
                 detalleBoletoRepository.contarBoletosEnRango(inicio, fin),
-                funcionRepository.countByEstadoAndFechaBetween(EstadoFuncion.FINALIZADA, desde, hasta));
+                contarFuncionesRealizadas(desde, hasta));
     }
 
     @Override
     public List<VentaPorPeliculaResponse> boletosPorPelicula(LocalDate desde, LocalDate hasta, int limite) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         validarLimite(limite);
 
         return detalleBoletoRepository.boletosPorPelicula(
@@ -89,7 +92,7 @@ public class ReporteServiceImpl implements ReporteService {
     @Override
     public List<VentaPorProductoResponse> productosMasVendidos(LocalDate desde, LocalDate hasta, int limite) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         validarLimite(limite);
 
         return detalleConfiteriaRepository.productosMasVendidos(
@@ -99,7 +102,7 @@ public class ReporteServiceImpl implements ReporteService {
     @Override
     public List<VentaDiariaResponse> ventasPorDia(LocalDate desde, LocalDate hasta) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         LocalDateTime inicio = desde.atStartOfDay();
         LocalDateTime fin = hasta.plusDays(1).atStartOfDay();
 
@@ -120,15 +123,16 @@ public class ReporteServiceImpl implements ReporteService {
     @Override
     public List<OcupacionSalaResponse> ocupacionPorSala(LocalDate desde, LocalDate hasta) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
 
-        return salaRepository.ocupacionPorSala(desde, hasta, EstadoFuncion.CANCELADA);
+        // Ocupación de las funciones del rango, no de las ventas hechas en el rango
+        return salaRepository.ocupacionPorSala(desde, hasta);
     }
 
     @Override
     public List<VentaPorTaquilleroResponse> ventasPorTaquillero(LocalDate desde, LocalDate hasta) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         LocalDateTime inicio = desde.atStartOfDay();
         LocalDateTime fin = hasta.plusDays(1).atStartOfDay();
 
@@ -148,22 +152,17 @@ public class ReporteServiceImpl implements ReporteService {
     @Override
     public List<FuncionTaquilleraResponse> funcionesMasTaquilleras(LocalDate desde, LocalDate hasta, int limite) {
 
-        validarRango(desde, hasta);
+        ValidadorRango.validar(desde, hasta);
         validarLimite(limite);
 
-        return detalleBoletoRepository.funcionesMasTaquilleras(desde, hasta, PageRequest.of(0, limite));
+        return detalleBoletoRepository.funcionesMasTaquilleras(
+                desde.atStartOfDay(),
+                hasta.plusDays(1).atStartOfDay(),
+                hasta,
+                PageRequest.of(0, limite));
     }
 
     // MÉTODOS PRIVADOS
-
-    private void validarRango(LocalDate desde, LocalDate hasta) {
-        if (desde == null || hasta == null || hasta.isBefore(desde)) {
-            throw new ReglaNegocioException("El rango de fechas no es válido");
-        }
-        if (ChronoUnit.DAYS.between(desde, hasta) > MAX_DIAS_CONSULTA) {
-            throw new ReglaNegocioException("El rango máximo es de " + MAX_DIAS_CONSULTA + " días");
-        }
-    }
 
     private Map<Long, BigDecimal> aMapaPorUsuario(List<TotalPorUsuario> filas) {
         Map<Long, BigDecimal> mapa = new HashMap<>();
@@ -173,6 +172,19 @@ public class ReporteServiceImpl implements ReporteService {
         }
 
         return mapa;
+    }
+
+    // Una función cuenta como realizada si terminó según su duración.
+    // Se calcula en memoria porque la duración está guardada como texto ("2H 30M"), no como minutos.
+    private long contarFuncionesRealizadas(LocalDate desde, LocalDate hasta) {
+
+        LocalDateTime ahora = LocalDateTime.now(reloj);
+
+        return funcionRepository.findEnRango(desde, hasta).stream()
+                .filter(funcion -> !LocalDateTime.of(funcion.getFecha(), funcion.getHoraInicio())
+                        .plusMinutes(funcion.getPelicula().duracionEnMinutos())
+                        .isAfter(ahora))
+                .count();
     }
 
     private void validarLimite(int limite) {

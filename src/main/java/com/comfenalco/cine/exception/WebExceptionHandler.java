@@ -24,6 +24,13 @@ public class WebExceptionHandler {
         return volverAtras(request);
     }
 
+    @ExceptionHandler(NoEncontradoException.class)
+    public String recursoNoEncontrado(NoEncontradoException ex, RedirectAttributes flash,
+                                      HttpServletRequest request) {
+        flash.addFlashAttribute("error", ex.getMessage());
+        return volverAtras(request);
+    }
+
     // Duplicados que se saltaron la comprobación previa, bloqueos y conflictos de versión
     @ExceptionHandler({DataIntegrityViolationException.class, ConcurrencyFailureException.class})
     public String conflictoDeDatos(Exception ex, RedirectAttributes flash,

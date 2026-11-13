@@ -1,0 +1,125 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap");
+
+/* ==========================================================================
+   Design Tokens - CineComfenalco
+   Basado en el sistema de diseño oficial de CineComfenalco
+   Grid proporcional basado en múltiplos de 8px (y submúltiplos de 4px)
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Tipografía */
+  --font-display: "Poppins", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Paleta cromática corporativa */
+  --navy-900: #1b1a45;
+  --navy-800: #26255d;
+  --navy-700: #313397;
+  --blue-800: #141f87;
+  --blue-600: #1424c3;
+  --red-500: #da2740;
+  --red-600: #b91c3c;
+  --sky-200: #b8cef5;
+
+  /* Superficies y textos (modo claro) */
+  --bg: #f2f7ff;
+  --bg-soft: #f8fbff;
+  --surface: #ffffff;
+  --surface-alt: #eef4ff;
+  --surface-strong: #e5edfb;
+  --text: #191a33;
+  --muted: #6c6b91;
+  --border: #dde6f5;
+  --gray: #d9d9d9;
+
+  /* Estados y alertas */
+  --success: #1f9d6a;
+  --success-bg: #e8f9f0;
+  --success-border: #b8ebd0;
+  --warning: #d9911f;
+  --warning-bg: #fff7e6;
+  --warning-border: #fedc9e;
+  --danger: #da2740;
+  --danger-bg: #fff0f2;
+  --danger-border: #ffd1d8;
+  --info: #1424c3;
+  --info-bg: #edf1ff;
+  --info-border: #c8d8ff;
+
+  /* Espaciados proporcionales (múltiplos de 8px / 4px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radios de borde proporcionales */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Sombras suaves de elevación */
+  --shadow-sm: 0 4px 14px rgba(38, 37, 93, 0.06);
+  --shadow-md: 0 12px 32px rgba(38, 37, 93, 0.09);
+  --shadow-lg: 0 24px 60px rgba(38, 37, 93, 0.16);
+
+  /* Dimensiones fijas de estructura (Sidebar y Topbar) */
+  --sidebar-w: 240px;
+  --topbar-h: 80px;
+  --transition: 180ms ease;
+
+  /* Colores de acento y textos legibles */
+  --accent-navy: #313397;
+  --accent-blue: #1424c3;
+}
+
+/* Modo oscuro: activado por atributo data-theme, clase dark o checkbox */
+:root[data-theme="dark"],
+body:has(#theme-toggle:checked),
+[data-theme="dark"],
+html.dark {
+  color-scheme: dark;
+
+  --bg: #11122b;
+  --bg-soft: #171938;
+  --surface: #1d1f43;
+  --surface-alt: #252858;
+  --surface-strong: #2d3167;
+  --text: #f2f5ff;
+  --muted: #a8adcf;
+  --border: #343866;
+  --gray: #4b4f7a;
+  --sky-200: #93c5fd;
+
+  /* Textos y acentos en modo oscuro cambiados a tonos claros y legibles */
+  --accent-navy: #c7d7fc;
+  --accent-blue: #93c5fd;
+
+  --success: #34d399;
+  --success-bg: #0f3d2a;
+  --success-border: #1a6344;
+  --warning: #fbbf24;
+  --warning-bg: #42290a;
+  --warning-border: #6d4412;
+  --danger: #f87171;
+  --danger-bg: #45101a;
+  --danger-border: #701a2b;
+  --info: #93c5fd;
+  --info-bg: #151b54;
+  --info-border: #232c85;
+
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.38);
+}

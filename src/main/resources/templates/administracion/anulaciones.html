@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Anulación de Facturas', 'administracion', ~{::#contenidoAnulaciones})}">
+<body>
+  <div id="contenidoAnulaciones" class="stack">
+    <!-- Encabezado de Anulaciones -->
+    <div class="section-head">
+      <div>
+        <h2>Anulación de Facturas de Venta</h2>
+        <p>Solo el Administrador del cine puede anular facturas y liberar los asientos en tiempo real</p>
+      </div>
+      <a class="btn btn-ghost" th:href="@{/administracion}">
+        <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Volver al panel
+      </a>
+    </div>
+
+    <!-- Filtro de Taquillero -->
+    <div class="card card-pad">
+      <form method="get" th:action="@{/administracion/anulaciones}" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px;">
+        <div class="field" style="flex: 1 1 320px; max-width: 480px;">
+          <label for="filtroTaquillero">
+            <span class="icon icon-users" style="color: var(--blue-600);"></span> Filtrar facturas por taquillero emisor:
+          </label>
+          <select id="filtroTaquillero" name="idTaquillero" onchange="this.form.submit()">
+            <option value="">-- Elige un taquillero para consultar --</option>
+            <option th:each="t : ${taquilleros}"
+                    th:value="${t.id}"
+                    th:text="${t.nombreCompleto}"
+                    th:selected="${t.id == idTaquilleroSeleccionado}">
+              Taquillero
+            </option>
+          </select>
+        </div>
+        <noscript>
+          <button type="submit" class="btn btn-secondary">Consultar facturas</button>
+        </noscript>
+      </form>
+    </div>
+
+    <!-- Si no hay taquillero seleccionado -->
+    <div class="card empty-state" th:if="${idTaquilleroSeleccionado == null}">
+      <span class="icon icon-filter"></span>
+      <h3>Selecciona un taquillero</h3>
+      <p>Elige un taquillero en el selector superior para listar las facturas emitidas pendientes de anulación.</p>
+    </div>
+
+    <!-- Tabla de Facturas con paginación -->
+    <div class="table-card" th:if="${idTaquilleroSeleccionado != null}">
+      <div class="card-pad section-head">
+        <div>
+          <h2>Facturas Emitidas</h2>
+          <p th:if="${paginaFacturas != null and !paginaFacturas.empty}">
+            Página <span th:text="${paginaActual + 1}">1</span> de
+            <span th:text="${paginaFacturas.totalPages}">1</span>
+            — <span th:text="${paginaFacturas.totalElements}">0</span> facturas en total
+          </p>
+          <p th:if="${paginaFacturas == null or paginaFacturas.empty}">
+            No hay facturas emitidas para este taquillero
+          </p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>N° Factura</th>
+              <th>Fecha y Hora</th>
+              <th>Método de Pago</th>
+              <th>Cliente</th>
+              <th>Total Pagado</th>
+              <th style="text-align: right;">Acción de Anulación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${paginaFacturas != null ? paginaFacturas.content : T(java.util.Collections).emptyList()}">
+              <td>
+                <strong style="color: var(--navy-800);" th:text="'#' + ${f.id}">#1</strong>
+              </td>
+              <td>
+                <span class="badge badge-neutral">
+                  <span class="icon icon-clock" style="font-size: 11px;"></span>
+                  <span th:text="${#temporals.format(f.fechaHora, 'yyyy-MM-dd HH:mm')}">2026-11-10 18:00</span>
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-info" th:text="${f.metodoPago}">EFECTIVO</span>
+              </td>
+              <td th:text="${f.nombreCliente != null and !#strings.isEmpty(f.nombreCliente) ? f.nombreCliente : 'Cliente de mostrador'}">Cliente</td>
+              <td>
+                <strong style="color: var(--red-600); font-size: 14px;" th:text="'$' + ${#numbers.formatInteger(f.total,1,'POINT')}">$0</strong>
+              </td>
+              <td style="text-align: right;">
+                <form th:action="@{/administracion/anulaciones/{id}/anular(id=${f.id})}" method="post" style="display:inline; margin: 0;">
+                  <input type="hidden" name="idTaquillero" th:value="${idTaquilleroSeleccionado}" />
+                  <input type="hidden" name="pagina" th:value="${paginaActual}" />
+                  <button type="submit"
+                          class="btn btn-danger-ghost btn-sm"
+                          onclick="return confirm('¿Confirmas la anulación de esta factura? Los asientos ocupados serán liberados de inmediato.');">
+                    <span class="icon icon-power"></span> Anular Factura
+                  </button>
+                </form>
+              </td>
+            </tr>
+
+            <tr th:if="${paginaFacturas == null or paginaFacturas.empty}">
+              <td colspan="6">
+                <div class="empty-state">
+                  <span class="icon icon-check" style="color: var(--success); opacity: 0.8;"></span>
+                  <p>Este taquillero no tiene facturas emitidas activas en el registro.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Controles de paginación: solo si hay más de una página -->
+      <div class="card-pad" style="display: flex; justify-content: center; align-items: center; gap: 12px;"
+           th:if="${paginaFacturas != null and paginaFacturas.totalPages > 1}">
+
+        <!-- Página anterior -->
+        <a class="btn btn-ghost btn-sm"
+           th:if="${paginaActual > 0}"
+           th:href="@{/administracion/anulaciones(idTaquillero=${idTaquilleroSeleccionado}, pagina=${paginaActual - 1})}">
+          <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Anterior
+        </a>
+        <span class="btn btn-ghost btn-sm" th:if="${paginaActual == 0}" style="opacity: 0.4; cursor: default;">
+          <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Anterior
+        </span>
+
+        <!-- Números de página -->
+        <span th:each="i : ${#numbers.sequence(0, paginaFacturas.totalPages - 1)}"
+              th:if="${paginaFacturas.totalPages <= 7 or (i >= paginaActual - 2 and i <= paginaActual + 2)}">
+          <a class="btn btn-sm"
+             th:classappend="${i == paginaActual} ? 'btn-primary' : 'btn-ghost'"
+             th:href="@{/administracion/anulaciones(idTaquillero=${idTaquilleroSeleccionado}, pagina=${i})}"
+             th:text="${i + 1}">1</a>
+        </span>
+        <span th:if="${paginaFacturas.totalPages > 7 and (paginaActual - 2 > 1)}"
+              style="margin: 0 4px;">…</span>
+        <span th:if="${paginaFacturas.totalPages > 7 and (paginaActual + 2 < paginaFacturas.totalPages - 2)}"
+              style="margin: 0 4px;">…</span>
+
+        <!-- Página siguiente -->
+        <a class="btn btn-ghost btn-sm"
+           th:if="${paginaActual < paginaFacturas.totalPages - 1}"
+           th:href="@{/administracion/anulaciones(idTaquillero=${idTaquilleroSeleccionado}, pagina=${paginaActual + 1})}">
+          Siguiente <span class="icon icon-arrow-right"></span>
+        </a>
+        <span class="btn btn-ghost btn-sm"
+              th:if="${paginaActual >= paginaFacturas.totalPages - 1}"
+              style="opacity: 0.4; cursor: default;">
+          Siguiente <span class="icon icon-arrow-right"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

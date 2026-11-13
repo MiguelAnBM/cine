@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+  <!-- ========================================================================
+       Topbar estático y permanente en todos los módulos
+       ======================================================================== -->
+  <header th:fragment="topbar(seccion, titulo, subtitulo)" class="topbar">
+    <div class="page-heading">
+      <span class="eyebrow">
+        <span class="icon" th:classappend="${seccion == 'inicio' ? 'icon-dashboard' : (seccion == 'cartelera' ? 'icon-film' : (seccion == 'funciones' ? 'icon-calendar' : (seccion == 'boletos' ? 'icon-ticket' : (seccion == 'cafeteria' ? 'icon-popcorn' : (seccion == 'administracion' ? 'icon-settings' : (seccion == 'reportes' ? 'icon-chart' : 'icon-info'))))))}"></span>
+        <span th:text="${seccion == 'inicio' ? 'Panel general' : (seccion == 'cartelera' ? 'Catálogo de Películas' : (seccion == 'funciones' ? 'Programación' : (seccion == 'boletos' ? 'Taquilla y Entradas' : (seccion == 'cafeteria' ? 'Confitería' : (seccion == 'administracion' ? 'Gestión' : (seccion == 'reportes' ? 'Analítica' : 'CineComfenalco'))))))}">Sección</span>
+      </span>
+      <h1 th:text="${titulo}">Inicio</h1>
+      <p th:if="${subtitulo != null and !#strings.isEmpty(subtitulo)}" th:text="${subtitulo}">Subtítulo</p>
+      <p th:unless="${subtitulo != null and !#strings.isEmpty(subtitulo)}" th:text="${seccion == 'inicio' ? 'Bienvenido al sistema de CineComfenalco' : (seccion == 'cartelera' ? 'Administra y consulta las películas en cartelera' : (seccion == 'funciones' ? 'Consulta y programa los horarios de proyección' : (seccion == 'boletos' ? 'Selecciona tu función y reserva tus butacas' : (seccion == 'cafeteria' ? 'Gestiona productos y pedidos en mostrador' : (seccion == 'administracion' ? 'Módulos de configuración y control' : (seccion == 'reportes' ? 'Métricas de taquilla, ventas y ocupación' : ''))))))}">Detalle de la sección</p>
+    </div>
+
+    <div class="topbar-actions">
+      <!-- Botón de cambio de tema (sol / luna) -->
+      <label for="theme-toggle" class="icon-btn theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
+        <span class="icon icon-sun"></span>
+        <span class="sr-only">Cambiar tema</span>
+      </label>
+    </div>
+  </header>
+</body>
+</html>

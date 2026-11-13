@@ -52,18 +52,6 @@ public class DetalleBoletoServiceImpl implements DetalleBoletoService {
     }
 
     @Override
-    public boolean estaDisponible(Long idFuncion, String codigoAsiento) {
-
-        String codigo = normalizar(codigoAsiento);
-
-        if (codigo == null || !ASIENTOS_VALIDOS.contains(codigo)) {
-            return false;
-        }
-
-        return !detalleBoletoRepository.existsByFuncionIdAndAsientoActivo(idFuncion, codigo);
-    }
-
-    @Override
     public void validarDisponibles(Long idFuncion, Collection<String> codigosAsiento) {
 
         if (codigosAsiento == null || codigosAsiento.isEmpty()) {
@@ -94,11 +82,6 @@ public class DetalleBoletoServiceImpl implements DetalleBoletoService {
     @Override
     public boolean tieneBoletosVendidos(Long idFuncion) {
         return detalleBoletoRepository.existsByFuncionIdAndAsientoActivoIsNotNull(idFuncion);
-    }
-
-    @Override
-    public long contarFacturasAfectadas(Long idFuncion) {
-        return detalleBoletoRepository.contarFacturasAfectadas(idFuncion);
     }
 
     @Override

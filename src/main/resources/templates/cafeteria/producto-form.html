@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina(${esEdicion ? 'Editar Producto' : 'Nuevo Producto'}, 'cafeteria', ~{::#contenidoFormProducto})}">
+<body>
+  <div id="contenidoFormProducto">
+    <div class="form-card">
+      <div style="margin-bottom: 24px;">
+        <span class="eyebrow" style="color: var(--warning); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">
+          <span class="icon icon-popcorn"></span> Catálogo de Confitería
+        </span>
+        <h2 style="font-family: var(--font-display); font-size: 24px; margin: 4px 0 0;"
+            th:text="${esEdicion ? 'Editar Producto de Cafetería' : 'Añadir Producto a Cafetería'}">
+          Añadir Producto a Cafetería
+        </h2>
+        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">
+          Registra o actualiza un snack, combo o bebida disponible para la venta en el cine.
+        </p>
+      </div>
+
+      <form th:action="${esEdicion} ? @{/cafeteria/productos/{id}(id=${idProducto})} : @{/cafeteria/productos}" th:object="${productoFormulario}" method="post" class="form-grid">
+        <!-- Nombre -->
+        <div class="field">
+          <label for="nombre">Nombre del producto *</label>
+          <input type="text" id="nombre" th:field="*{nombre}" placeholder="Ej. Combo Familiar" required />
+          <p class="field-error" th:if="${#fields.hasErrors('nombre')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{nombre}">Error en nombre</span>
+          </p>
+        </div>
+
+        <!-- Descripción -->
+        <div class="field">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" th:field="*{descripcion}" rows="3" placeholder="Detalla los componentes del producto o combo..."></textarea>
+          <p class="field-error" th:if="${#fields.hasErrors('descripcion')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{descripcion}">Error en descripción</span>
+          </p>
+        </div>
+
+        <!-- Precio y Categoría en fila -->
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="precio">Precio de venta ($) *</label>
+            <input type="number" step="0.01" id="precio" th:field="*{precio}" placeholder="12000" required />
+            <p class="field-error" th:if="${#fields.hasErrors('precio')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{precio}">Error en precio</span>
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="categoria">Categoría *</label>
+            <select id="categoria" th:field="*{categoria}" required>
+              <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">Categoría</option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('categoria')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{categoria}">Error en categoría</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- URL Imagen -->
+        <div class="field">
+          <label for="imagenUrl">URL de la imagen (opcional)</label>
+          <input type="url" id="imagenUrl" th:field="*{imagenUrl}" placeholder="https://ejemplo.com/producto.jpg" />
+          <p class="field-hint">Si se omite, se asignará la imagen oficial de confitería</p>
+          <p class="field-error" th:if="${#fields.hasErrors('imagenUrl')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{imagenUrl}">Error en imagen</span>
+          </p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="form-actions">
+          <a class="btn btn-ghost" th:href="@{/cafeteria}">
+            <span class="icon icon-x"></span> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon icon-check"></span> <span th:text="${esEdicion ? 'Actualizar Producto' : 'Guardar Producto'}">Guardar Producto</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -6,7 +6,7 @@ import com.comfenalco.cine.model.DetalleConfiteria;
 
 public record ProductoVendidoResponse(
     String nombre, Integer cantidad, BigDecimal precioUnitario, BigDecimal subtotal
-) {
+) implements java.io.Serializable {
     public static ProductoVendidoResponse de(DetalleConfiteria d) {
         return new ProductoVendidoResponse(
                 d.getProductoConfiteria().getNombre(), d.getCantidad(),

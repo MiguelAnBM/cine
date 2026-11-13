@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Cartelera', 'cartelera', ~{::#contenidoCartelera})}">
+<body>
+  <div id="contenidoCartelera" class="stack">
+    <!-- Encabezado de la Cartelera -->
+    <div class="section-head">
+      <div>
+        <h2>Películas en Cartelera</h2>
+        <p th:text="${#lists.isEmpty(peliculas)} ? 'Sin películas registradas' : ${#lists.size(peliculas)} + ' películas registradas en el sistema'">
+          Películas registradas
+        </p>
+      </div>
+      <a class="btn btn-primary" th:href="@{/cartelera/nueva}">
+        <span class="icon icon-plus"></span> Nueva película
+      </a>
+    </div>
+
+    <!-- Filtro de estado -->
+    <div class="chip-row" aria-label="Filtrar películas">
+      <a class="chip" th:href="@{/cartelera}" th:classappend="${estadoFiltro == null} ? ' is-active' : ''">Todas</a>
+      <a class="chip" th:href="@{/cartelera(estado='ACTIVA')}" th:classappend="${estadoFiltro != null and estadoFiltro.name() == 'ACTIVA'} ? ' is-active' : ''">Solo activas</a>
+    </div>
+
+    <!-- Mensaje si la lista está vacía -->
+    <div class="card empty-state" th:if="${#lists.isEmpty(peliculas)}">
+      <span class="icon icon-film"></span>
+      <h3 th:text="${estadoFiltro != null and estadoFiltro.name() == 'ACTIVA'} ? 'No hay películas activas' : 'No hay películas en cartelera'">No hay películas en cartelera</h3>
+      <p th:text="${estadoFiltro != null and estadoFiltro.name() == 'ACTIVA'} ? 'No hay películas activas en este momento.' : 'Comienza publicando los títulos y estrenos disponibles para el público.'">Comienza publicando los títulos y estrenos disponibles para el público.</p>
+      <a class="btn btn-primary" th:href="@{/cartelera/nueva}">
+        <span class="icon icon-plus"></span> Registrar primera película
+      </a>
+    </div>
+
+    <!-- Cuadrícula de películas con tarjetas compactas y proporcionadas -->
+    <section class="movie-grid" th:unless="${#lists.isEmpty(peliculas)}" aria-label="Catálogo de películas">
+      <article class="movie-card" th:each="pelicula : ${peliculas}">
+        <div class="movie-poster">
+          <img th:src="${pelicula.imagenUrl != null and !#strings.isEmpty(pelicula.imagenUrl)} ? ${pelicula.imagenUrl} : @{/img/posters/dune.jpg}"
+               th:alt="${pelicula.titulo}"
+               loading="lazy"
+               onerror="this.src='/img/posters/default.jpg'">
+          
+          <span class="badge"
+                th:classappend="${pelicula.estado.name() == 'ACTIVA'} ? ' badge-success' : ' badge-warning'"
+                th:text="${pelicula.estado.name() == 'ACTIVA'} ? 'Activa' : 'Inactiva'">
+            Activa
+          </span>
+
+          <div class="movie-title-overlay">
+            <strong th:text="${pelicula.titulo}">Título de la película</strong>
+            <span th:text="${pelicula.genero} + ' · ' + ${pelicula.duracion}">Género · 2H 15M</span>
+          </div>
+        </div>
+
+        <div class="movie-body">
+          <div class="movie-meta">
+            <span>
+              <span class="icon icon-shield" style="color: var(--blue-600);"></span>
+              <strong th:text="${pelicula.clasificacion}">+12</strong>
+            </span>
+            <span>
+              <span class="icon icon-clock" style="color: var(--muted);"></span>
+              <span th:text="${pelicula.duracion}">2H 15M</span>
+            </span>
+          </div>
+
+          <p class="movie-sinopsis" th:text="${pelicula.sinopsis}">
+            Sinopsis resumida de la película para orientación rápida del espectador.
+          </p>
+
+          <div class="movie-actions">
+            <a class="btn btn-primary btn-sm" th:href="@{/funciones}">
+              <span class="icon icon-calendar"></span> Funciones
+            </a>
+
+            <!-- Botón Editar -->
+            <a class="btn btn-ghost btn-icon btn-sm"
+               th:href="@{/cartelera/{id}/editar(id=${pelicula.id})}"
+               title="Editar película"
+               aria-label="Editar película">
+              <span class="icon icon-edit"></span>
+            </a>
+
+            <!-- Botón Desactivar (si está ACTIVA) -->
+            <form th:if="${pelicula.estado.name() == 'ACTIVA'}"
+                  th:action="@{/cartelera/{id}/estado(id=${pelicula.id})}"
+                  method="post" style="display:inline; margin:0;">
+              <input type="hidden" name="nuevoEstado" value="INACTIVA">
+              <button class="btn btn-danger-ghost btn-icon btn-sm"
+                      type="submit"
+                      title="Retirar de cartelera"
+                      onclick="return confirm('¿Deseas retirar esta película de la cartelera activa?');">
+                <span class="icon icon-power"></span>
+              </button>
+            </form>
+
+            <!-- Botón Activar (si está INACTIVA) -->
+            <form th:if="${pelicula.estado.name() == 'INACTIVA'}"
+                  th:action="@{/cartelera/{id}/estado(id=${pelicula.id})}"
+                  method="post" style="display:inline; margin:0;">
+              <input type="hidden" name="nuevoEstado" value="ACTIVA">
+              <button class="btn btn-ghost btn-icon btn-sm"
+                      type="submit"
+                      title="Publicar en cartelera"
+                      style="color: var(--success);"
+                      onclick="return confirm('¿Volver a publicar esta película en cartelera?');">
+                <span class="icon icon-check"></span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

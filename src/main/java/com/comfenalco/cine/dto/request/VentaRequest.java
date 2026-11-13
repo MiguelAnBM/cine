@@ -17,6 +17,9 @@ public record VentaRequest(
 
     Long idFuncion,   // opcional: solo si la venta incluye boletos
 
+    @NotNull(message = "El taquillero es obligatorio")
+    Long idTaquillero,
+
     @Size(max = 15, message = "Máximo {max} asientos por venta")
     List<
     @NotBlank(message = "Asiento inválido")
@@ -32,8 +35,8 @@ public record VentaRequest(
     @Size(max = 150, message = "El correo admite máximo {max} caracteres")
     String correoCliente,
 
-    @Valid @Size(max = 20, message = "Máximo {max} productos distintos por venta")
-    List<ItemConfiteriaRequest> productos
+    @Size(max = 20, message = "Máximo {max} productos distintos por venta")
+    List<@Valid ItemConfiteriaRequest> productos
 ) {
     // Se ejecuta antes de la validación: asientos en mayúscula y vacíos convertidos a null
     public VentaRequest {

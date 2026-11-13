@@ -54,8 +54,7 @@ public class Funcion {
     private Sala sala;
     
     // Que la fecha no sea pasada se valida al PROGRAMAR (FuncionRequest y FuncionServiceImpl),
-    // no aquí: la entidad se valida en cada UPDATE, y una función histórica debe seguir siendo válida
-    // (por ejemplo, para marcarla EN_CURSO o FINALIZADA cuando ya pasó su hora de inicio).
+    // no aquí: la entidad se valida en cada UPDATE, y una función histórica debe seguir siendo válida.
     @NotNull(message = "La fecha es obligatoria")
     @Column(nullable = false)
     private LocalDate fecha;

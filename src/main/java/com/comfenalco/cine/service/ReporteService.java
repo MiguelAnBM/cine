@@ -28,6 +28,6 @@ public interface ReporteService {
     // Facturas y totales por taquillero, de mayor a menor venta
     List<VentaPorTaquilleroResponse> ventasPorTaquillero(LocalDate desde, LocalDate hasta);
 
-    // Funciones con más boletos vendidos (rango por fecha de la función)
+    // Funciones con más boletos vendidos (rango por fecha de venta), solo funciones de la fecha filtrada
     List<FuncionTaquilleraResponse> funcionesMasTaquilleras(LocalDate desde, LocalDate hasta, int limite);
 }

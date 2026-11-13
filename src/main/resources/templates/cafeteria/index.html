@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Cafetería', 'cafeteria', ~{::#contenidoCafeteria})}">
+<body>
+  <div id="contenidoCafeteria" class="stack">
+    <!-- Encabezado de Cafetería -->
+    <div class="section-head">
+      <div>
+        <h2>Productos de Cafetería y Confitería</h2>
+        <p>Gestiona productos, combos y atiende pedidos de mostrador en tiempo real</p>
+      </div>
+      <a class="btn btn-primary" th:href="@{/cafeteria/productos/nuevo}">
+        <span class="icon icon-plus"></span> Añadir producto
+      </a>
+    </div>
+
+    <!-- Filtros por categoría (Chips) -->
+    <div class="chip-row" aria-label="Categorías de confitería">
+      <a class="chip" th:href="@{/cafeteria}" th:classappend="${param.categoria == null} ? ' is-active' : ''">
+        Todos <span class="badge badge-info" th:text="${#lists.size(productos)}">6</span>
+      </a>
+      <a class="chip"
+         th:each="cat : ${categorias}"
+         th:href="@{/cafeteria(categoria=${cat})}"
+         th:classappend="${param.categoria != null and param.categoria[0] == cat.name()} ? ' is-active' : ''"
+         th:text="${cat}">
+        Categoría
+      </a>
+    </div>
+
+    <!-- Layout de Cafetería: Catálogo a la izquierda, Carrito lateral fijo a la derecha -->
+    <div class="cafeteria-layout">
+      <!-- Catálogo de Productos -->
+      <section>
+        <div class="card empty-state" th:if="${#lists.isEmpty(productos)}">
+          <span class="icon icon-popcorn"></span>
+          <h3>No hay productos disponibles</h3>
+          <p>No se encontraron productos en esta categoría o aún no se han registrado.</p>
+          <a class="btn btn-primary btn-sm" th:href="@{/cafeteria/productos/nuevo}">
+            <span class="icon icon-plus"></span> Registrar primer producto
+          </a>
+        </div>
+
+        <div class="product-grid" th:unless="${#lists.isEmpty(productos)}">
+          <article class="product-card"
+                   th:each="prod : ${productos}"
+                   th:classappend="${prod.estado.name() == 'INACTIVO'} ? ' is-inactive' : ''">
+            <div class="product-image">
+              <img th:src="${prod.imagenUrl != null and !#strings.isEmpty(prod.imagenUrl)} ? ${prod.imagenUrl} : @{/img/products/combo.jpg}"
+                   th:alt="${prod.nombre}"
+                   loading="lazy"
+                   onerror="this.src='/img/products/default.jpg'">
+              <span class="badge badge-warning" th:text="${prod.categoria}">Combos</span>
+              <span th:if="${prod.estado.name() == 'INACTIVO'}"
+                    class="badge badge-danger"
+                    style="position: absolute; top: 10px; right: 10px; z-index: 2;">
+                Inactivo
+              </span>
+            </div>
+
+            <div class="product-body">
+              <h3 th:text="${prod.nombre}">Combo Clásico</h3>
+              <p th:text="${prod.descripcion}">Palomitas grandes con bebida mediana. Ideal para compartir.</p>
+              
+              <div class="product-footer">
+                <div class="product-price-row">
+                  <span class="product-price" th:text="'$' + ${#numbers.formatInteger(prod.precio,1,'POINT')}">$18.000</span>
+                  <span th:if="${prod.estado.name() == 'INACTIVO'}" class="badge badge-danger">Inactivo</span>
+                </div>
+
+                <div class="product-actions">
+                  <!-- Si está ACTIVO: Botón Agregar a la izquierda tomando el espacio principal -->
+                  <form th:if="${prod.estado.name() == 'ACTIVO'}"
+                        th:action="@{/cafeteria/carrito/agregar}"
+                        method="post" style="flex: 1; margin: 0; min-width: 0;">
+                    <input type="hidden" name="idProducto" th:value="${prod.id}" />
+                    <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+                      <span class="icon icon-plus"></span> Agregar
+                    </button>
+                  </form>
+
+                  <!-- Si está INACTIVO: Botón Activar tomando el espacio principal -->
+                  <form th:if="${prod.estado.name() == 'INACTIVO'}"
+                        th:action="@{/cafeteria/productos/{id}/estado(id=${prod.id})}"
+                        method="post" style="flex: 1; margin: 0; min-width: 0;">
+                    <input type="hidden" name="nuevoEstado" value="ACTIVO">
+                    <button class="btn btn-success-ghost btn-sm"
+                            type="submit"
+                            title="Volver a activar producto"
+                            aria-label="Volver a activar producto"
+                            style="width: 100%; justify-content: center;"
+                            onclick="return confirm('¿Deseas reactivar este producto en la cafetería?');">
+                      <span class="icon icon-power"></span> Activar
+                    </button>
+                  </form>
+
+                  <!-- Botón Editar Producto (permitido tanto activo como inactivo) -->
+                  <a class="btn btn-ghost btn-icon btn-sm"
+                     th:href="@{/cafeteria/productos/{id}/editar(id=${prod.id})}"
+                     title="Editar producto"
+                     aria-label="Editar producto">
+                    <span class="icon icon-edit"></span>
+                  </a>
+
+                  <!-- Si está ACTIVO: Botón Desactivar -->
+                  <form th:if="${prod.estado.name() == 'ACTIVO'}"
+                        th:action="@{/cafeteria/productos/{id}/estado(id=${prod.id})}"
+                        method="post" style="margin: 0;">
+                    <input type="hidden" name="nuevoEstado" value="INACTIVO">
+                    <button class="btn btn-danger-ghost btn-icon btn-sm"
+                            type="submit"
+                            title="Desactivar producto"
+                            aria-label="Desactivar producto"
+                            onclick="return confirm('¿Deseas desactivar este producto de la cafetería?');">
+                      <span class="icon icon-power"></span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Panel de Pedido / Carrito Lateral -->
+      <aside class="cart-card">
+        <div class="cart-head">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="icon icon-popcorn" style="color: var(--navy-700); font-size: 20px;"></span>
+            <h2>Pedido actual</h2>
+          </div>
+          <span class="cart-count" th:text="${renglonesCarrito != null ? #lists.size(renglonesCarrito) : 0}">0</span>
+        </div>
+
+        <!-- Carrito Vacío -->
+        <div class="empty-state" th:if="${#lists.isEmpty(renglonesCarrito)}" style="padding: 24px 12px;">
+          <span class="icon icon-shopping-bag" style="font-size: 28px;"></span>
+          <p style="margin: 0; font-size: 12px;">El pedido está vacío.<br>Agrega productos del catálogo.</p>
+        </div>
+
+        <!-- Carrito con ítems -->
+        <div th:unless="${#lists.isEmpty(renglonesCarrito)}" class="stack">
+          <div class="cart-item" th:each="item : ${renglonesCarrito}">
+            <div class="cart-item-info">
+              <strong th:text="${item.nombre}">Crispetas</strong>
+              <span th:text="${item.cantidad} + ' x $' + ${#numbers.formatInteger(item.precioUnitario,1,'POINT')} + ' = $' + ${#numbers.formatInteger(item.subtotal,1,'POINT')}">1 x $12.000 = $12.000</span>
+            </div>
+
+            <!-- Botón para disminuir/quitar -->
+            <form th:action="@{/cafeteria/carrito/quitar}" method="post" style="margin: 0;">
+              <input type="hidden" name="idProducto" th:value="${item.idProducto}" />
+              <button type="submit" class="cart-remove btn-icon" title="Quitar una unidad" style="cursor: pointer;">
+                <span class="icon icon-minus"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="summary-total" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600;">Total del pedido:</span>
+            <strong style="color: var(--red-500); font-size: 20px;" th:text="'$' + ${#numbers.formatInteger(totalPedido,1,'POINT')}">$0</strong>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Formulario de Cobro -->
+          <form th:action="@{/cafeteria/pagar}" method="post" class="stack" style="gap: 12px;" th:object="${pagoFormulario}">
+            <div class="field">
+              <label for="idTaquilleroCafeteria">Taquillero responsable *</label>
+              <select id="idTaquilleroCafeteria" name="idTaquillero" required>
+                <option value="">-- Selecciona taquillero --</option>
+                <option th:each="t : ${taquillerosActivos}" th:value="${t.id}" th:text="${t.nombreCompleto}">Taquillero</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="metodoPagoCafeteria">Método de pago *</label>
+              <select id="metodoPagoCafeteria" name="metodoPago" th:field="*{metodoPago}" required>
+                <option th:each="m : ${metodosDePago}" th:value="${m}" th:text="${m}">Efectivo</option>
+              </select>
+              <span class="field-error" th:if="${#fields.hasErrors('metodoPago')}" th:errors="*{metodoPago}"></span>
+            </div>
+
+            <div class="field">
+              <label for="nombreClienteCaf">Cliente (opcional)</label>
+              <input type="text" id="nombreClienteCaf" name="nombreCliente" th:field="*{nombreCliente}" placeholder="Ej. Ana Gómez" />
+              <span class="field-error" th:if="${#fields.hasErrors('nombreCliente')}" th:errors="*{nombreCliente}"></span>
+            </div>
+
+            <div class="field">
+              <label for="correoClienteCaf">Correo electrónico (opcional)</label>
+              <input type="email" id="correoClienteCaf" name="correoCliente" th:field="*{correoCliente}" placeholder="cliente@correo.com" />
+              <span class="field-error" th:if="${#fields.hasErrors('correoCliente')}" th:errors="*{correoCliente}"></span>
+            </div>
+
+            <!-- Errores globales de validación -->
+            <div th:if="${#fields.hasGlobalErrors()}" class="field-error">
+              <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error global</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 6px;">
+              <span class="icon icon-check"></span> Pagar y Emitir Factura
+            </button>
+          </form>
+
+          <!-- Vaciar Pedido -->
+          <form th:action="@{/cafeteria/carrito/vaciar}" method="post" style="margin-top: 4px;">
+            <button type="submit" class="btn btn-ghost btn-block btn-sm" onclick="return confirm('¿Deseas vaciar todo el pedido actual?');">
+              <span class="icon icon-trash"></span> Vaciar pedido
+            </button>
+          </form>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Modal de factura: aparece SOLO tras confirmar una venta de cafetería -->
+    <div th:if="${facturaEmitida != null}" th:replace="~{fragments/factura-modal :: modalFactura}"></div>
+  </div>
+</body>
+</html>

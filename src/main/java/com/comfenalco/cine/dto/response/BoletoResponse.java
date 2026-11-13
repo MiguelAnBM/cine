@@ -10,7 +10,7 @@ import com.comfenalco.cine.model.Funcion;
 public record BoletoResponse(
     String pelicula, String sala, LocalDate fecha, LocalTime horaInicio,
     String asiento, BigDecimal precio
-) {
+) implements java.io.Serializable {
     public static BoletoResponse de(DetalleBoleto b) {
         Funcion f = b.getFuncion();
         return new BoletoResponse(

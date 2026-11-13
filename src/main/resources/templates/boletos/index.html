@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Venta de Boletos', 'boletos', ~{::#contenidoBoletos})}">
+<body>
+  <div id="contenidoBoletos" class="stack">
+    <!-- Selector Superior de Función -->
+    <div class="card card-pad" style="margin-bottom: 8px;">
+      <div class="field" style="max-width: 600px;">
+        <label for="selectorFuncion" style="font-weight: 700; font-size: 14px;">
+          <span class="icon icon-calendar" style="color: var(--blue-600);"></span> Selecciona la función a vender:
+        </label>
+        <select id="selectorFuncion"
+                class="field select"
+                onchange="if (this.value) { location.href='/boletos/' + this.value; } else { location.href='/boletos'; }">
+          <option value="">-- Elige una función programada disponible --</option>
+          <option th:each="f : ${funcionesDisponibles}"
+                  th:value="${f.id}"
+                            th:text="${f.pelicula} + ' | ' + ${f.sala} + ' | ' + ${f.fecha} + ' ' + ${#temporals.format(f.horaInicio, 'HH:mm')} + ' ($' + ${#numbers.formatInteger(f.precioBoleto,1,'POINT')} + ')'"
+                  th:selected="${f.id == idFuncionSeleccionada}">
+            Función
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Si no hay función seleccionada -->
+    <div class="card empty-state" th:if="${idFuncionSeleccionada == null}">
+      <span class="icon icon-ticket"></span>
+      <h3>Ninguna función seleccionada</h3>
+      <p>Selecciona una función activa en el menú superior para visualizar el mapa de la sala y seleccionar las butacas.</p>
+    </div>
+
+    <!-- Si hay función seleccionada: Formulario de venta y mapa de asientos -->
+    <form th:if="${idFuncionSeleccionada != null}"
+          th:action="@{/boletos/venta}"
+          th:object="${ventaFormulario}"
+          method="post"
+          class="booking-layout">
+
+      <input type="hidden" name="idFuncion" th:value="${idFuncionSeleccionada}" />
+      <span id="precioUnitario" th:data-precio="${funcionSeleccionada.precioBoleto}" style="display:none;"></span>
+
+      <!-- Errores de validación -->
+      <div th:if="${#fields.hasGlobalErrors()}" class="field-error">
+        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error global</p>
+      </div>
+      <div th:if="${#fields.hasErrors('*')}" class="field-error">
+        <p th:each="err : ${#fields.errors('*')}" th:text="${err}">Error</p>
+      </div>
+
+      <!-- Columna izquierda: Pantalla y butacas -->
+      <section class="card booking-card">
+        <div class="booking-steps">
+          <span class="step is-done"><span class="step-number"><span class="icon icon-check"></span></span>Función</span>
+          <span class="step is-active"><span class="step-number">2</span>Butacas</span>
+          <span class="step"><span class="step-number">3</span>Generar Factura</span>
+        </div>
+
+        <div class="screen">PANTALLA</div>
+
+        <!-- Mapa de los 80 asientos ordenados en filas A-H -->
+        <div class="seat-map" role="grid" aria-label="Mapa de asientos de la sala">
+          <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; max-width: 540px; width: 100%;">
+            <div th:each="asiento : ${mapaDeAsientos}" style="position: relative; display: flex; justify-content: center;">
+              <button type="button"
+                      class="seat"
+                      th:classappend="${asiento.ocupado} ? ' seat--occupied' : ''"
+                      th:data-codigo="${asiento.codigo}"
+                      th:disabled="${asiento.ocupado}"
+                      th:aria-checked="false"
+                      th:title="${asiento.codigo} + (${asiento.ocupado} ? ' (Ocupado)' : ' (Disponible)')">
+                <span th:text="${asiento.codigo}">A1</span>
+              </button>
+              <!-- Checkbox real oculto sincronizado por asientos.js -->
+              <input type="checkbox"
+                     name="asientos"
+                     th:value="${asiento.codigo}"
+                     th:disabled="${asiento.ocupado}"
+                     style="position: absolute; opacity: 0; pointer-events: none;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="seat-legend">
+          <span><span class="legend-dot"></span> Disponible</span>
+          <span><span class="legend-dot legend-dot--selected"></span> Seleccionado</span>
+          <span><span class="legend-dot legend-dot--occupied"></span> Ocupado</span>
+        </div>
+      </section>
+
+      <!-- Columna derecha: Resumen de compra y datos de pago -->
+      <aside class="summary-card">
+        <div class="summary-movie">
+          <img th:src="${funcionSeleccionada.imagenUrl != null and !#strings.isEmpty(funcionSeleccionada.imagenUrl)} ? ${funcionSeleccionada.imagenUrl} : @{/img/posters/dune.jpg}"
+               th:alt="${funcionSeleccionada.pelicula}"
+               loading="lazy"
+               onerror="this.src='/img/posters/dune.jpg'">
+          <div>
+            <strong th:text="${funcionSeleccionada.pelicula}">Película</strong>
+            <span th:text="${funcionSeleccionada.sala} + ' · ' + ${#temporals.format(funcionSeleccionada.horaInicio, 'HH:mm')}">Sala 1 · 18:00</span>
+            <span class="badge badge-success" style="margin-top: 6px;">Función disponible</span>
+          </div>
+        </div>
+
+        <div class="summary-list">
+          <div class="summary-row">
+            <span>Precio unitario:</span>
+            <strong th:text="'$' + ${#numbers.formatInteger(funcionSeleccionada.precioBoleto,1,'POINT')}">$18.000</strong>
+          </div>
+          <div class="summary-row">
+            <span>Butacas elegidas:</span>
+            <strong><span id="contadorAsientos">0</span> / máx. 15</strong>
+          </div>
+          <div class="summary-row summary-total">
+            <span>Total a cobrar:</span>
+            <strong>$<span id="totalSeleccion">0</span></strong>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Taquillero responsable -->
+        <div class="field">
+          <label for="idTaquillero">Taquillero responsable *</label>
+          <select id="idTaquillero" name="idTaquillero" th:field="*{idTaquillero}" required>
+            <option value="">-- Selecciona el taquillero --</option>
+            <option th:each="t : ${taquillerosActivos}" th:value="${t.id}" th:text="${t.nombreCompleto}">Taquillero</option>
+          </select>
+          <span class="field-error" th:if="${#fields.hasErrors('idTaquillero')}" th:errors="*{idTaquillero}"></span>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="field">
+          <label for="metodoPago">Método de pago *</label>
+          <select id="metodoPago" name="metodoPago" th:field="*{metodoPago}" required>
+            <option th:each="m : ${metodosDePago}" th:value="${m}" th:text="${m}">Efectivo</option>
+          </select>
+          <span class="field-error" th:if="${#fields.hasErrors('metodoPago')}" th:errors="*{metodoPago}"></span>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div class="field">
+          <label for="nombreCliente">Nombre del cliente (opcional)</label>
+          <input type="text" id="nombreCliente" name="nombreCliente" th:field="*{nombreCliente}" placeholder="Ej. Juan Pérez" />
+          <span class="field-error" th:if="${#fields.hasErrors('nombreCliente')}" th:errors="*{nombreCliente}"></span>
+        </div>
+
+        <div class="field">
+          <label for="correoCliente">Correo electrónico (opcional)</label>
+          <input type="email" id="correoCliente" name="correoCliente" th:field="*{correoCliente}" placeholder="cliente@correo.com" />
+          <span class="field-error" th:if="${#fields.hasErrors('correoCliente')}" th:errors="*{correoCliente}"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">
+          <span class="icon icon-ticket"></span> Confirmar y Generar Factura
+        </button>
+      </aside>
+    </form>
+
+    <!-- Modal de factura: aparece SOLO tras confirmar una venta de boletos -->
+    <div th:if="${facturaEmitida != null}" th:replace="~{fragments/factura-modal :: modalFactura}"></div>
+  </div>
+</body>
+</html>

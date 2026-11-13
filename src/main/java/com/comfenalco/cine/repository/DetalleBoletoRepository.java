@@ -1,7 +1,6 @@
 package com.comfenalco.cine.repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -20,9 +19,6 @@ import com.comfenalco.cine.model.DetalleBoleto;
 // Extiende Repository para no acceder a borrar ni crear
 public interface DetalleBoletoRepository extends Repository<DetalleBoleto, Long> {
 
-       // Disponibilidad: solo cuentan los boletos vigentes (asiento_activo no nulo)
-       boolean existsByFuncionIdAndAsientoActivo(Long idFuncion, String asientoActivo);
-
        // ¿La función tiene ventas reales? Los boletos de facturas anuladas no cuentan
        boolean existsByFuncionIdAndAsientoActivoIsNotNull(Long idFuncion);
 
@@ -32,12 +28,6 @@ public interface DetalleBoletoRepository extends Repository<DetalleBoleto, Long>
               WHERE d.funcion.id = :idFuncion AND d.asientoActivo IS NOT NULL
               """)
        List<String> findAsientosOcupados(@Param("idFuncion") Long idFuncion);
-
-       @Query("""
-              SELECT COUNT(DISTINCT d.factura.id) FROM DetalleBoleto d
-              WHERE d.funcion.id = :idFuncion AND d.asientoActivo IS NOT NULL
-              """)
-       long contarFacturasAfectadas(@Param("idFuncion") Long idFuncion);
 
     // Reportes: solo facturas emitidas
        @Query("""
@@ -95,20 +85,25 @@ public interface DetalleBoletoRepository extends Repository<DetalleBoleto, Long>
            """)
     List<ConteoPorFuncion> contarBoletosPorFuncion(@Param("ids") Collection<Long> ids);
 
-    // Funciones más taquilleras: boletos vigentes por función (rango por fecha de la función)
+    // Funciones más taquilleras: boletos vigentes por función vendidos en el rango, solo funciones de la fecha filtrada
     @Query("""
            SELECT new com.comfenalco.cine.dto.response.FuncionTaquilleraResponse(
                       p.titulo, s.nombre, f.fecha, f.horaInicio, COUNT(d), SUM(d.precioUnitario))
            FROM DetalleBoleto d
+           JOIN d.factura fac
            JOIN d.funcion f
            JOIN f.pelicula p
            JOIN f.sala s
-           WHERE f.fecha BETWEEN :desde AND :hasta AND d.asientoActivo IS NOT NULL
+           WHERE fac.fechaHora >= :desde AND fac.fechaHora < :hasta
+             AND fac.estado = com.comfenalco.cine.model.enums.EstadoFactura.EMITIDA
+             AND d.asientoActivo IS NOT NULL
+             AND f.fecha = :fechaFuncion
            GROUP BY f.id, p.titulo, s.nombre, f.fecha, f.horaInicio
            ORDER BY COUNT(d) DESC, f.fecha DESC, f.horaInicio DESC
            """)
-    List<FuncionTaquilleraResponse> funcionesMasTaquilleras(@Param("desde") LocalDate desde,
-                                                            @Param("hasta") LocalDate hasta,
+    List<FuncionTaquilleraResponse> funcionesMasTaquilleras(@Param("desde") LocalDateTime desde,
+                                                            @Param("hasta") LocalDateTime hasta,
+                                                            @Param("fechaFuncion") java.time.LocalDate fechaFuncion,
                                                             Pageable pageable);
 
     // Total de boletos vendidos por usuario (facturas emitidas, rango por fecha de venta)

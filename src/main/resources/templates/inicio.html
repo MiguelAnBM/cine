@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Inicio', 'inicio', ~{::#contenidoInicio})}">
+<body>
+  <div id="contenidoInicio" class="stack">
+    <!-- Hero Principal -->
+    <section class="hero">
+      <div class="hero-content">
+        <span class="hero-eyebrow"><span class="icon icon-play"></span>La magia del cine, más cerca</span>
+        <h2>Tu próxima <span>historia</span> comienza aquí.</h2>
+        <p>Descubre la cartelera completa, programa tus funciones y asegura tu butaca en CineComfenalco. Una experiencia pensada para disfrutar de principio a fin.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" th:href="@{/cartelera}"><span class="icon icon-film"></span>Ver cartelera</a>
+          <a class="btn btn-ghost" th:href="@{/boletos}"><span class="icon icon-ticket"></span>Vender boletos</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <!-- 3 Tarjetas de películas del hero: Primera, segunda y tercera de la cartelera con fallback a imagen por defecto -->
+        <img class="hero-poster hero-poster--left"
+             th:src="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 0 and peliculasEnCartelera[0].imagenUrl != null and !#strings.isEmpty(peliculasEnCartelera[0].imagenUrl)} ? ${peliculasEnCartelera[0].imagenUrl} : @{/img/posters/hunger-games.jpg}"
+             th:alt="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 0 ? peliculasEnCartelera[0].titulo : 'Cartelera'}"
+             loading="lazy"
+             onerror="this.src='/img/posters/default.jpg'">
+
+        <img class="hero-poster hero-poster--center"
+             th:src="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 1 and peliculasEnCartelera[1].imagenUrl != null and !#strings.isEmpty(peliculasEnCartelera[1].imagenUrl)} ? ${peliculasEnCartelera[1].imagenUrl} : @{/img/posters/dune.jpg}"
+             th:alt="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 1 ? peliculasEnCartelera[1].titulo : 'Cartelera'}"
+             loading="lazy"
+             onerror="this.src='/img/posters/default.jpg'">
+
+        <img class="hero-poster hero-poster--right"
+             th:src="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 2 and peliculasEnCartelera[2].imagenUrl != null and !#strings.isEmpty(peliculasEnCartelera[2].imagenUrl)} ? ${peliculasEnCartelera[2].imagenUrl} : @{/img/posters/avatar.jpg}"
+             th:alt="${peliculasEnCartelera != null and #lists.size(peliculasEnCartelera) > 2 ? peliculasEnCartelera[2].titulo : 'Cartelera'}"
+             loading="lazy"
+             onerror="this.src='/img/posters/default.jpg'">
+
+        <div class="hero-floating hero-floating--top">
+          <span class="icon icon-star"></span>
+          <div><strong>CineComfenalco</strong><span>Cartelera de estreno</span></div>
+        </div>
+        <div class="hero-floating hero-floating--bottom">
+          <span class="icon icon-calendar"></span>
+          <div>
+            <strong>Gestiona</strong>
+            <span>Servicios y ventas</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estadísticas del Día -->
+    <section class="stats-grid" aria-label="Resumen de operación">
+      <article class="stat-card">
+        <span class="stat-icon stat-icon--red"><span class="icon icon-film"></span></span>
+        <div>
+          <div class="stat-value" th:text="${peliculasEnCartelera != null ? #lists.size(peliculasEnCartelera) : 0}">4</div>
+          <div class="stat-label">Películas en cartelera</div>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon stat-icon--blue"><span class="icon icon-ticket"></span></span>
+        <div>
+          <div class="stat-value" th:text="${resumen != null ? resumen.boletos : 0}">0</div>
+          <div class="stat-label">Boletos vendidos hoy</div>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon"><span class="icon icon-calendar"></span></span>
+        <div>
+          <div class="stat-value" th:text="${salasActivas != null ? salasActivas : 0}">0</div>
+          <div class="stat-label">Salas activas</div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Grid de contenido: Próximas funciones y resumen lateral -->
+    <div class="dashboard-grid">
+      <!-- Próximas funciones -->
+      <section class="table-card">
+        <div class="card-pad section-head">
+          <div>
+            <h2>Próximas funciones</h2>
+            <p>Horarios programados a continuación</p>
+          </div>
+          <a class="btn btn-ghost btn-sm" th:href="@{/funciones}">Ver todas <span class="icon icon-arrow-right"></span></a>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Película</th>
+                <th>Sala</th>
+                <th>Horario</th>
+                <th>Precio</th>
+                <th>Boletos</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="funcion : ${proximasFunciones}">
+                <td>
+                  <div class="cell-title">
+                    <span class="icon icon-film" style="color: var(--blue-600); font-size: 18px;"></span>
+                    <div>
+                      <strong th:text="${funcion.pelicula}">Película</strong>
+                      <span th:text="${funcion.tipoSala != null ? funcion.tipoSala.etiqueta : '2D'}">2D</span>
+                    </div>
+                  </div>
+                </td>
+                <td th:text="${funcion.sala}">Sala 1</td>
+                <td th:text="${#temporals.format(funcion.horaInicio, 'HH:mm')}">14:30</td>
+                <td th:text="'$' + ${#numbers.formatInteger(funcion.precioBoleto,1,'POINT')}">$18.000</td>
+                <td>
+                  <span th:text="${funcion.boletosVendidos}">0</span> / 80
+                </td>
+                <td>
+                  <span class="badge" th:classappend="${funcion.estado.name() == 'PROGRAMADA' ? ' badge-info' : ' badge-success'}" th:text="${funcion.estado.name() == 'FINALIZADA' ? 'Finalizada' : funcion.estado.name()}">PROGRAMADA</span>
+                </td>
+                <td>
+                  <a class="btn btn-primary btn-sm" th:href="@{/boletos/{id}(id=${funcion.id})}">
+                    <span class="icon icon-ticket"></span> Boletos
+                  </a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(proximasFunciones)}">
+                <td colspan="7">
+                  <div class="empty-state">
+                    <span class="icon icon-calendar"></span>
+                    <p>No hay funciones programadas próximas para hoy.</p>
+                    <a class="btn btn-ghost btn-sm" th:href="@{/funciones/nueva}">+ Programar nueva función</a>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Panel Lateral: Resumen del Día alineado con Próximas Funciones -->
+      <section class="card card-pad summary-card" th:if="${resumen != null}">
+        <div class="section-head" style="margin-bottom: 20px;">
+          <div>
+            <h2>Resumen del día</h2>
+            <p>Métricas operativas del cine</p>
+          </div>
+          <span class="badge badge-info">Hoy</span>
+        </div>
+
+        <div class="quick-list">
+          <div class="quick-item">
+            <span class="quick-icon"><span class="icon icon-dollar"></span></span>
+            <div>
+              <strong>Ingresos totales</strong>
+              <span>Taquilla + Cafetería</span>
+            </div>
+            <span class="quick-value" th:text="'$' + ${#numbers.formatInteger(resumen.total,1,'POINT')}">$0</span>
+          </div>
+
+          <div class="quick-item">
+            <span class="quick-icon"><span class="icon icon-ticket"></span></span>
+            <div>
+              <strong>Boletería</strong>
+              <span>Ventas de boletería</span>
+            </div>
+            <span class="quick-value" th:text="'$' + ${#numbers.formatInteger(resumen.totalBoletos,1,'POINT')}">$0</span>
+          </div>
+
+          <div class="quick-item">
+            <span class="quick-icon"><span class="icon icon-popcorn"></span></span>
+            <div>
+              <strong>Cafetería</strong>
+              <span>Ventas de cafetería</span>
+            </div>
+            <span class="quick-value" th:text="'$' + ${#numbers.formatInteger(resumen.totalConfiteria,1,'POINT')}">$0</span>
+          </div>
+
+          <div class="quick-item">
+            <span class="quick-icon"><span class="icon icon-calendar"></span></span>
+            <div>
+              <strong>Funciones para hoy</strong>
+              <span>Programación del día</span>
+            </div>
+            <span class="quick-value" th:text="${funcionesParaHoy != null ? funcionesParaHoy : 0}">0</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

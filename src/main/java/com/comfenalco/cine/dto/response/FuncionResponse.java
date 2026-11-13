@@ -2,6 +2,7 @@ package com.comfenalco.cine.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.comfenalco.cine.model.Funcion;
@@ -12,24 +13,30 @@ import com.comfenalco.cine.model.enums.TipoSala;
 
 public record FuncionResponse(
     Long id,
-    Long idPelicula, String pelicula, String duracion,
+    Long idPelicula, String pelicula, String imagenUrl, String duracion,
     Long idSala, String sala, TipoSala tipoSala, BigDecimal precioBoleto,
     LocalDate fecha, LocalTime horaInicio, LocalTime horaFin,
     EstadoFuncion estado,
     long boletosVendidos
 ) {
     // Debe llamarse dentro de la transacción del servicio (recorre relaciones LAZY)
-    public static FuncionResponse de(Funcion f, long boletosVendidos) {
+    public static FuncionResponse de(Funcion f, long boletosVendidos, LocalDateTime ahora) {
         Pelicula p = f.getPelicula();
         Sala s = f.getSala();
+        LocalDateTime fin = LocalDateTime.of(f.getFecha(), f.getHoraInicio())
+                .plusMinutes(p.duracionEnMinutos());
+        EstadoFuncion estado = f.getEstado();
+        if (!fin.isAfter(ahora)) {
+            estado = EstadoFuncion.FINALIZADA;
+        }
 
         return new FuncionResponse(
                 f.getId(),
-                p.getId(), p.getTitulo(), p.getDuracion(),
+                p.getId(), p.getTitulo(), p.getImagenUrl(), p.getDuracion(),
                 s.getId(), s.getNombre(), s.getTipo(), s.getPrecioBoleto(),
                 f.getFecha(), f.getHoraInicio(),
                 f.getHoraInicio().plusMinutes(p.duracionEnMinutos()),   // si cruza la medianoche, vuelve a 00:xx
-                f.getEstado(),
+                estado,
                 boletosVendidos);
     }
 }

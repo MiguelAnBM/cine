@@ -27,11 +27,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByRolAndEstadoForUpdate(@Param("rol") RolUsuario rol,
                                               @Param("estado") EstadoUsuario estado);
 
-    boolean existsByUsernameIgnoreCase(String username);
-
-    boolean existsByUsernameIgnoreCaseAndIdNot(String username, Long id);
-
     Optional<Usuario> findByUsernameAndEstado(String username, EstadoUsuario estado);  // login: solo activos
 
-    List<Usuario> findByEstadoOrderByNombreCompleto(EstadoUsuario estado);
+    // Métodos para consultar taquilleros (todos o solo los activos)
+    List<Usuario> findByRolOrderByNombreCompleto(RolUsuario rol);
+
+    List<Usuario> findByRolAndEstadoOrderByNombreCompleto(RolUsuario rol, EstadoUsuario estado);
 }

@@ -1,9 +1,6 @@
 package com.comfenalco.cine.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-@ResponseStatus(HttpStatus.NOT_FOUND)
+// Sin @ResponseStatus: el manejo global en WebExceptionHandler hace redirect con flash
 public class NoEncontradoException extends RuntimeException {
     public NoEncontradoException(String mensaje) {
         super(mensaje);

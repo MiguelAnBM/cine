@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Salas de Cine', 'administracion', ~{::#contenidoSalas})}">
+<body>
+  <div id="contenidoSalas" class="stack">
+    <!-- Encabezado de Salas -->
+    <div class="section-head">
+      <div>
+        <h2>Salas de Cine</h2>
+        <p>Configura los espacios de proyección y precio de los boletos</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a class="btn btn-ghost" th:href="@{/administracion}">
+          <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Volver al panel
+        </a>
+        <a class="btn btn-primary" th:href="@{/administracion/salas/nueva}">
+          <span class="icon icon-plus"></span> Nueva sala
+        </a>
+      </div>
+    </div>
+
+    <!-- Tabla de Salas -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nombre de la Sala</th>
+              <th>Tipo de Experiencia</th>
+              <th>Precio Oficial Boleto</th>
+              <th>Estado</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${salas}">
+              <td>
+                <div class="cell-title">
+                  <span class="icon icon-room" style="color: var(--blue-600); font-size: 18px;"></span>
+                  <strong th:text="${s.nombre}">Sala 1</strong>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-info" th:text="${s.tipo != null ? s.tipo.etiqueta : '2D'}">2D</span>
+              </td>
+              <td>
+                <strong style="color: var(--navy-700);" th:text="'$' + ${#numbers.formatInteger(s.precioBoleto,1,'POINT')}">$18.000</strong>
+              </td>
+              <td>
+                <span class="badge"
+                      th:classappend="${s.estado.name() == 'ACTIVA' ? ' badge-success' : ' badge-warning'}"
+                      th:text="${s.estado}">
+                  ACTIVA
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; align-items: center; gap: 8px;">
+                  <a class="btn btn-ghost btn-sm" th:href="@{/administracion/salas/{id}/editar(id=${s.id})}">
+                    <span class="icon icon-edit"></span> Editar
+                  </a>
+
+                  <!-- Activar / Desactivar -->
+                  <form th:action="@{/administracion/salas/{id}/estado(id=${s.id})}" method="post" style="display:inline; margin: 0;">
+                    <input type="hidden" name="nuevoEstado" th:value="${s.estado.name() == 'ACTIVA' ? 'INACTIVA' : 'ACTIVA'}" />
+                    <button class="btn btn-sm"
+                            th:classappend="${s.estado.name() == 'ACTIVA' ? ' btn-danger-ghost' : ' btn-ghost'}"
+                            type="submit"
+                            onclick="return confirm('¿Confirmas el cambio de estado de la sala?');">
+                      <span class="icon" th:classappend="${s.estado.name() == 'ACTIVA' ? 'icon-power' : 'icon-check'}"></span>
+                      <span th:text="${s.estado.name() == 'ACTIVA' ? 'Desactivar' : 'Activar'}">Estado</span>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(salas)}">
+              <td colspan="5">
+                <div class="empty-state">
+                  <span class="icon icon-room"></span>
+                  <p>No hay salas registradas.</p>
+                  <a class="btn btn-primary btn-sm" th:href="@{/administracion/salas/nueva}">
+                    <span class="icon icon-plus"></span> Registrar primera sala
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

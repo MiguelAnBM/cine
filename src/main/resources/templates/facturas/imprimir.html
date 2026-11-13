@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="'Factura #' + ${factura.id} + ' | Cine Comfenalco'">Imprimir Factura</title>
+  <style>
+    /* ========================================================================
+       Vista Imprimible Limpia (Monocromática, compatible con 80mm y papel estándar)
+       ======================================================================== */
+    @page {
+      size: 80mm auto;
+      margin: 5mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #000000;
+      background: #ffffff;
+      margin: 0 auto;
+      padding: 12px;
+      max-width: 340px;
+    }
+
+    .no-print {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 16px;
+      padding: 10px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: sans-serif;
+    }
+
+    .btn-print {
+      background: #1e293b;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-close {
+      background: #e2e8f0;
+      color: #334155;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .ticket-header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .ticket-title {
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 0;
+      letter-spacing: 0.05em;
+    }
+
+    .ticket-sub {
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+
+    .divider {
+      border-top: 1px dashed #000000;
+      margin: 8px 0;
+    }
+
+    .divider-double {
+      border-top: 2px solid #000000;
+      margin: 10px 0;
+    }
+
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .ticket-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0;
+    }
+
+    .ticket-table th {
+      text-align: left;
+      border-bottom: 1px solid #000000;
+      font-size: 10px;
+      padding: 3px 0;
+      text-transform: uppercase;
+    }
+
+    .ticket-table td {
+      padding: 4px 0;
+      vertical-align: top;
+      font-size: 11px;
+    }
+
+    .ticket-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    .ticket-footer {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 10.5px;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Barra de control en pantalla (se oculta al imprimir) -->
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ Mandar a Imprimir</button>
+    <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
+  </div>
+
+  <div class="ticket-header">
+    <h1 class="ticket-title">Cine Comfenalco</h1>
+    <div class="ticket-sub">NIT: 890.100.285-1 · Servicios de Entretenimiento</div>
+    <div class="ticket-sub">Factura de Venta POS Electrónica</div>
+  </div>
+
+  <div class="divider-double"></div>
+
+  <div class="ticket-row">
+    <span>Factura No:</span>
+    <strong th:text="'#FACT-' + ${#numbers.formatInteger(factura.id, 5)}">#FACT-00001</strong>
+  </div>
+  <div class="ticket-row">
+    <span>Fecha/Hora:</span>
+    <span th:text="${#temporals.format(factura.fechaHora, 'dd/MM/yyyy HH:mm:ss')}">11/11/2026 19:45:00</span>
+  </div>
+  <div class="ticket-row">
+    <span>Taquillero:</span>
+    <span th:text="${factura.taquillero}">Taquillero</span>
+  </div>
+  <div class="ticket-row">
+    <span>Método Pago:</span>
+    <strong th:text="${factura.metodoPago}">EFECTIVO</strong>
+  </div>
+  <div class="ticket-row" th:if="${factura.nombreCliente != null and !#strings.isEmpty(factura.nombreCliente)}">
+    <span>Cliente:</span>
+    <span th:text="${factura.nombreCliente}">Cliente</span>
+  </div>
+  <div class="ticket-row" th:if="${factura.correoCliente != null and !#strings.isEmpty(factura.correoCliente)}">
+    <span>Correo:</span>
+    <span th:text="${factura.correoCliente}">correo@ejemplo.com</span>
+  </div>
+
+  <!-- Detalle Boletos -->
+  <div th:if="${factura.boletos != null and !#lists.isEmpty(factura.boletos)}">
+    <div class="divider"></div>
+    <div style="font-weight: bold; margin-bottom: 4px;">BOLETOS DE CINE:</div>
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>Detalle</th>
+          <th style="text-align: center;">Butaca</th>
+          <th style="text-align: right;">Precio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="b : ${factura.boletos}">
+          <td>
+            <div style="font-weight: bold;" th:text="${b.pelicula}">Película</div>
+            <div style="font-size: 10px;" th:text="${b.sala} + ' (' + ${#temporals.format(b.fecha, 'dd/MM')} + ' ' + ${b.horaInicio} + ')'">Sala</div>
+          </td>
+          <td style="text-align: center; font-weight: bold;" th:text="${b.asiento}">A1</td>
+          <td style="text-align: right;" th:text="'$' + ${#numbers.formatInteger(b.precio,1,'POINT')}">$0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Detalle Confitería -->
+  <div th:if="${factura.productos != null and !#lists.isEmpty(factura.productos)}">
+    <div class="divider"></div>
+    <div style="font-weight: bold; margin-bottom: 4px;">CONFITERÍA / CAFETERÍA:</div>
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>Cant. / Producto</th>
+          <th style="text-align: right;">Unit.</th>
+          <th style="text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="p : ${factura.productos}">
+          <td>
+            <span th:text="${p.cantidad} + 'x ' + ${p.nombre}">1x Crispetas</span>
+          </td>
+          <td style="text-align: right;" th:text="'$' + ${#numbers.formatInteger(p.precioUnitario,1,'POINT')}">$0</td>
+          <td style="text-align: right; font-weight: bold;" th:text="'$' + ${#numbers.formatInteger(p.subtotal,1,'POINT')}">$0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider-double"></div>
+
+  <div class="ticket-total">
+    <span>TOTAL PAGADO:</span>
+    <span th:text="'$' + ${#numbers.formatInteger(factura.total,1,'POINT')}">$0</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="ticket-footer">
+    <div>¡Gracias por su visita a Cine Comfenalco!</div>
+    <div style="font-size: 9.5px; margin-top: 4px;">Conserve este ticket para ingresar a la sala y reclamar confitería.</div>
+  </div>
+
+  <script>
+    // Dispara automáticamente la impresión nativa
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        window.print();
+      }, 300);
+    });
+  </script>
+</body>
+</html>
+

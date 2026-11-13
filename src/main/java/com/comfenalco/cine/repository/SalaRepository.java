@@ -11,7 +11,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.comfenalco.cine.dto.response.OcupacionSalaResponse;
 import com.comfenalco.cine.model.Sala;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
 import com.comfenalco.cine.model.enums.EstadoSala;
 
 import jakarta.persistence.LockModeType;
@@ -24,25 +23,22 @@ public interface SalaRepository extends JpaRepository<Sala, Long> {
 
     List<Sala> findByEstadoOrderByNombre(EstadoSala estado);
 
-    // Evita que se programen funciones solapadas en la misma sala al mismo tiempo
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Sala s WHERE s.id = :id")
     Optional<Sala> findByIdForUpdate(@Param("id") Long id);
 
-    // Ocupación por sala: funciones no canceladas del rango y boletos vigentes vendidos en ellas.
-    // Incluye las salas sin funciones (con ceros).
     @Query("""
            SELECT new com.comfenalco.cine.dto.response.OcupacionSalaResponse(
-                      s.nombre, COUNT(DISTINCT f.id), COUNT(d.id))
+                      s.nombre, COUNT(DISTINCT fu.id), COUNT(d.id))
            FROM Sala s
-           LEFT JOIN Funcion f ON f.sala = s
-                 AND f.fecha BETWEEN :desde AND :hasta
-                 AND f.estado <> :cancelada
-           LEFT JOIN DetalleBoleto d ON d.funcion = f AND d.asientoActivo IS NOT NULL
+           LEFT JOIN Funcion fu ON fu.sala = s
+                 AND fu.fecha BETWEEN :desde AND :hasta
+           LEFT JOIN DetalleBoleto d ON d.funcion = fu
+                 AND d.asientoActivo IS NOT NULL
+                 AND d.factura.estado = com.comfenalco.cine.model.enums.EstadoFactura.EMITIDA
            GROUP BY s.id, s.nombre
            ORDER BY s.nombre
            """)
     List<OcupacionSalaResponse> ocupacionPorSala(@Param("desde") LocalDate desde,
-                                                 @Param("hasta") LocalDate hasta,
-                                                 @Param("cancelada") EstadoFuncion cancelada);
+                                                 @Param("hasta") LocalDate hasta);
 }

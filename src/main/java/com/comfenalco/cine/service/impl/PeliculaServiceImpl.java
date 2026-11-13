@@ -1,20 +1,21 @@
 package com.comfenalco.cine.service.impl;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.comfenalco.cine.service.PeliculaService;
+import com.comfenalco.cine.service.FuncionVendibilidad;
 import com.comfenalco.cine.dto.request.PeliculaRequest;
 import com.comfenalco.cine.dto.response.PeliculaResponse;
 import com.comfenalco.cine.exception.NoEncontradoException;
 import com.comfenalco.cine.exception.ReglaNegocioException;
 import com.comfenalco.cine.model.Pelicula;
-import com.comfenalco.cine.model.enums.EstadoFuncion;
 import com.comfenalco.cine.model.enums.EstadoPelicula;
-import com.comfenalco.cine.model.enums.Genero;
 import com.comfenalco.cine.repository.FuncionRepository;
 import com.comfenalco.cine.repository.PeliculaRepository;
 
@@ -24,10 +25,12 @@ public class PeliculaServiceImpl implements PeliculaService {
 
     private final PeliculaRepository peliculaRepository;
     private final FuncionRepository funcionRepository;
+    private final Clock reloj;
 
-    public PeliculaServiceImpl(PeliculaRepository peliculaRepository, FuncionRepository funcionRepository) {
+    public PeliculaServiceImpl(PeliculaRepository peliculaRepository, FuncionRepository funcionRepository, Clock reloj) {
         this.peliculaRepository = peliculaRepository;
         this.funcionRepository = funcionRepository;
+        this.reloj = reloj;
     }
 
     @Override
@@ -45,21 +48,6 @@ public class PeliculaServiceImpl implements PeliculaService {
     @Override
     public List<PeliculaResponse> listarPorEstado(EstadoPelicula estado) {
         return peliculaRepository.findByEstado(estado).stream()
-                .map(PeliculaResponse::de)
-                .toList();
-    }
-
-    @Override
-    public List<PeliculaResponse> listarPorGeneroYEstado(Genero genero, EstadoPelicula estado) {
-        return peliculaRepository.findByGeneroAndEstado(genero, estado).stream()
-                .map(PeliculaResponse::de)
-                .toList();
-    }
-
-    @Override
-    public List<PeliculaResponse> buscarPorTitulo(String titulo, EstadoPelicula estado) {
-        String filtro = (titulo == null) ? "" : titulo.trim();
-        return peliculaRepository.findByTituloContainingIgnoreCaseAndEstado(filtro, estado).stream()
                 .map(PeliculaResponse::de)
                 .toList();
     }
@@ -84,12 +72,11 @@ public class PeliculaServiceImpl implements PeliculaService {
     }
 
     @Override
-    @Transactional 
+    @Transactional
     public PeliculaResponse editar(Long id, PeliculaRequest request) {
-                                    
+
         Pelicula peliculaAEditar = obtenerEntidad(id);
 
-        // AndIdNot: la película no se compara consigo misma
         if (peliculaRepository.existsByTituloIgnoreCaseAndIdNot(request.titulo(), id)) {
             throw new ReglaNegocioException("Ya existe otra película con ese título");
         }
@@ -101,25 +88,32 @@ public class PeliculaServiceImpl implements PeliculaService {
         peliculaAEditar.setGenero(request.genero());
         peliculaAEditar.setImagenUrl(request.imagenUrl());
 
-        return PeliculaResponse.de(peliculaAEditar); // sin save(): Hibernate guarda los cambios al terminar la transacción
+        return PeliculaResponse.de(peliculaAEditar);
     }
 
     @Override
-    @Transactional 
+    @Transactional
     public void cambiarEstado(Long id, EstadoPelicula nuevoEstado) {
 
         Pelicula pelicula = peliculaRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new NoEncontradoException("La película no existe"));
 
         if (pelicula.getEstado() == nuevoEstado) {
-            return;   // nada que cambiar
+            return;
         }
 
-        if (nuevoEstado == EstadoPelicula.INACTIVA
-                && funcionRepository.existsByPeliculaIdAndEstadoAndFechaGreaterThanEqual(
-                        id, EstadoFuncion.PROGRAMADA, LocalDate.now())) {
-            throw new ReglaNegocioException(
-                "No se puede desactivar: la película tiene funciones programadas");
+        if (nuevoEstado == EstadoPelicula.INACTIVA) {
+            LocalDateTime ahora = LocalDateTime.now(reloj);
+            boolean tieneFuncionVigente = funcionRepository.findByPeliculaIdAndFechaGreaterThanEqual(
+                    id, ahora.toLocalDate()).stream()
+                    .anyMatch(f -> !FuncionVendibilidad.haFinalizado(
+                            LocalDateTime.of(f.getFecha(), f.getHoraInicio()),
+                            f.getPelicula().duracionEnMinutos(),
+                            ahora));
+            if (tieneFuncionVigente) {
+                throw new ReglaNegocioException(
+                        "No se puede desactivar: la película tiene funciones vigentes");
+            }
         }
 
         pelicula.setEstado(nuevoEstado);

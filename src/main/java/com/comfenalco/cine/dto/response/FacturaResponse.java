@@ -14,7 +14,7 @@ public record FacturaResponse(
     EstadoFactura estado, LocalDateTime fechaAnulacion,
     List<BoletoResponse> boletos, List<ProductoVendidoResponse> productos,
     BigDecimal total
-) {
+) implements java.io.Serializable {
     public static FacturaResponse de(Factura f) {
         return new FacturaResponse(
                 f.getId(), f.getFechaHora(), f.getMetodoPago(), f.getUsuario().getNombreCompleto(),

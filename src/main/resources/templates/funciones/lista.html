@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Funciones', 'funciones', ~{::#contenidoFunciones})}">
+<body>
+  <div id="contenidoFunciones" class="stack">
+    <!-- Encabezado de Funciones -->
+    <div class="section-head">
+      <div>
+        <h2>Programación de Funciones</h2>
+        <p th:text="${paginaFunciones.totalElements} + ' funciones registradas en el sistema'">
+          Horarios y salas de proyección
+        </p>
+      </div>
+      <a class="btn btn-primary" th:href="@{/funciones/nueva}">
+        <span class="icon icon-plus"></span> Nueva función
+      </a>
+    </div>
+
+    <!-- Tabla de Funciones -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Película</th>
+              <th>Sala</th>
+              <th>Fecha</th>
+              <th>Horario</th>
+              <th>Boletos</th>
+              <th>Estado</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="funcion : ${paginaFunciones.content}">
+              <td>
+                <div class="cell-title">
+                  <span class="icon icon-film" style="color: var(--blue-600); font-size: 18px;"></span>
+                  <div>
+                    <strong th:text="${funcion.pelicula}">Dune: Parte Dos</strong>
+                    <span th:text="${funcion.tipoSala != null ? funcion.tipoSala.etiqueta : '2D'}">2D</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <strong th:text="${funcion.sala}">Sala 1</strong>
+              </td>
+              <td th:text="${funcion.fecha}">2026-11-10</td>
+              <td>
+                <span class="badge badge-neutral">
+                  <span class="icon icon-clock" style="font-size: 11px;"></span>
+                  <span th:text="${#temporals.format(funcion.horaInicio, 'HH:mm')}">18:00</span>
+                </span>
+              </td>
+              <td>
+                <span th:text="${funcion.boletosVendidos}">0</span> / 80
+              </td>
+              <td>
+                <span class="badge"
+                      th:classappend="${funcion.estado.name() == 'PROGRAMADA' ? ' badge-info' : ' badge-success'}"
+                      th:text="${funcion.estado.name() == 'FINALIZADA' ? 'Finalizada' : funcion.estado.name()}">
+                  PROGRAMADA
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                  <!-- Ver Detalle -->
+                  <a class="btn btn-ghost btn-sm btn-icon"
+                     th:href="@{/funciones/{id}(id=${funcion.id})}"
+                     title="Ver detalle de función">
+                    <span class="icon icon-eye"></span>
+                  </a>
+
+                  <a class="btn btn-ghost btn-sm btn-icon"
+                     th:if="${funcion.estado.name() == 'PROGRAMADA' and funcion.boletosVendidos == 0}"
+                     th:href="@{/funciones/{id}/editar(id=${funcion.id})}"
+                     title="Editar función">
+                    <span class="icon icon-edit"></span>
+                  </a>
+                </div>
+              </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(paginaFunciones.content)}">
+              <td colspan="7">
+                <div class="empty-state">
+                  <span class="icon icon-calendar"></span>
+                  <p th:text="${#lists.isEmpty(paginaFunciones.content)} ? 'No hay funciones registradas.' : 'No hay funciones registradas.'">No hay funciones registradas.</p>
+                  <a class="btn btn-primary btn-sm" th:href="@{/funciones/nueva}">
+                    <span class="icon icon-plus"></span> Programar primera función
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Barra de paginación -->
+      <div class="pagination" th:if="${totalPaginas > 1}">
+        <span th:text="'Página ' + (${paginaActual} + 1) + ' de ' + ${totalPaginas}">Página 1 de 1</span>
+        <div class="pagination-pages">
+          <a class="btn btn-ghost btn-sm"
+             th:if="${paginaActual > 0}"
+             th:href="@{/funciones(pagina=${paginaActual - 1})}">
+            <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Anterior
+          </a>
+          <a class="btn btn-ghost btn-sm"
+             th:if="${paginaActual + 1 < totalPaginas}"
+             th:href="@{/funciones(pagina=${paginaActual + 1})}">
+            Siguiente <span class="icon icon-arrow-right"></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

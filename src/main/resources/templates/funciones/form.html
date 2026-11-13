@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina(${esEdicion ? 'Editar Función' : 'Nueva Función'}, 'funciones', ~{::#contenidoFormFuncion})}">
+<body>
+  <div id="contenidoFormFuncion">
+    <div class="form-card">
+      <div style="margin-bottom: 24px;">
+        <span class="eyebrow" style="color: var(--blue-600); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;">
+          <span class="icon icon-calendar"></span> Programación de Funciones
+        </span>
+        <h2 style="font-family: var(--font-display); font-size: 24px; margin: 4px 0 0;"
+            th:text="${esEdicion ? 'Editar Horario de Función' : 'Programar Nueva Función'}">
+          Nueva Función
+        </h2>
+        <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">
+          Asigna una película en exhibición a una sala activa con su fecha y horario.
+        </p>
+      </div>
+
+      <form th:action="${esEdicion} ? @{/funciones/{id}(id=${idFuncion})} : @{/funciones}"
+            th:object="${funcionFormulario}" method="post" class="form-grid">
+
+        <!-- Película -->
+        <div class="field">
+          <label for="idPelicula">Película a proyectar *</label>
+          <select id="idPelicula" th:field="*{idPelicula}" required>
+            <option value="">-- Selecciona una película activa --</option>
+            <option th:each="p : ${listaPeliculas}" th:value="${p.id}" th:text="${p.titulo} + ' (' + ${p.duracion} + ' · ' + ${p.clasificacion} + ')'">Película</option>
+          </select>
+          <p class="field-error" th:if="${#fields.hasErrors('idPelicula')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{idPelicula}">Error en película</span>
+          </p>
+        </div>
+
+        <!-- Sala -->
+        <div class="field">
+          <label for="idSala">Sala de cine asignada *</label>
+          <select id="idSala" th:field="*{idSala}" required>
+            <option value="">-- Selecciona una sala activa --</option>
+            <option th:each="s : ${listaSalas}" th:value="${s.id}" th:text="${s.nombre} + ' — ' + ${s.tipo.etiqueta} + ' (Precio boleto: $' + ${s.precioBoleto} + ')'">Sala</option>
+          </select>
+          <p class="field-error" th:if="${#fields.hasErrors('idSala')}">
+            <span class="icon icon-x"></span>
+            <span th:errors="*{idSala}">Error en sala</span>
+          </p>
+        </div>
+
+        <!-- Fecha y Hora de Inicio -->
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="fecha">Fecha de proyección *</label>
+            <input type="date" id="fecha" th:field="*{fecha}" required />
+            <p class="field-error" th:if="${#fields.hasErrors('fecha')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{fecha}">Error en fecha</span>
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="horaInicio">Hora de inicio *</label>
+            <input type="time" id="horaInicio" th:field="*{horaInicio}" required />
+            <p class="field-error" th:if="${#fields.hasErrors('horaInicio')}">
+              <span class="icon icon-x"></span>
+              <span th:errors="*{horaInicio}">Error en hora</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="form-actions">
+          <a class="btn btn-ghost" th:href="@{/funciones}">
+            <span class="icon icon-x"></span> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon icon-check"></span>
+            <span th:text="${esEdicion ? 'Actualizar Función' : 'Guardar y Programar'}">Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

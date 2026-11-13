@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Reportes', 'reportes', ~{::#contenidoReportes})}">
+<body>
+  <div id="contenidoReportes" class="stack">
+    <!-- Encabezado con selector de fecha -->
+    <div class="section-head">
+      <div>
+        <h2>Reportes y Estadísticas de Operación</h2>
+        <p>Indicadores de taquilla, ventas de cafetería y ocupación de salas</p>
+      </div>
+      <form th:action="@{/reportes}" method="get" style="display: flex; align-items: center; gap: 8px;">
+        <div class="field" style="margin: 0;">
+          <input type="date" id="fecha" name="fecha" th:value="${fechaSeleccionada}" class="field input" style="padding: 8px 12px; font-size: 13px;">
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm">
+          <span class="icon icon-filter"></span> Consultar
+        </button>
+      </form>
+    </div>
+
+    <!-- 1. Tarjetas de Indicadores Principales -->
+    <section class="reports-grid" aria-label="Indicadores principales">
+      <article class="report-card">
+        <div class="report-top">
+          <span class="report-icon report-icon--green"><span class="icon icon-dollar"></span></span>
+          <span class="badge badge-success">Ingresos</span>
+        </div>
+        <div class="report-value" th:text="'$' + ${#numbers.formatInteger(resumen.total,1,'POINT')}">$0</div>
+        <div class="report-label">Ingresos totales del día</div>
+      </article>
+
+      <article class="report-card">
+        <div class="report-top">
+          <span class="report-icon report-icon--blue"><span class="icon icon-ticket"></span></span>
+          <span class="badge badge-info">Taquilla</span>
+        </div>
+        <div class="report-value" th:text="'$' + ${#numbers.formatInteger(resumen.totalBoletos,1,'POINT')}">$0</div>
+        <div class="report-label">Ventas en boletería <span th:text="'(' + ${resumen.boletos} + ' boletos vendidos)'">(0 boletos vendidos)</span></div>
+      </article>
+
+      <article class="report-card">
+        <div class="report-top">
+          <span class="report-icon"><span class="icon icon-popcorn"></span></span>
+          <span class="badge badge-warning">Cafetería</span>
+        </div>
+        <div class="report-value" th:text="'$' + ${#numbers.formatInteger(resumen.totalConfiteria,1,'POINT')}">$0</div>
+        <div class="report-label">Ventas en cafetería</div>
+      </article>
+
+      <article class="report-card">
+        <div class="report-top">
+          <span class="report-icon report-icon--red"><span class="icon icon-user"></span></span>
+          <span class="badge badge-neutral">Personal</span>
+        </div>
+        <div class="report-value" th:text="${!#lists.isEmpty(ventasTaquilleros) ? ventasTaquilleros[0].taquillero : '&mdash;'}">&mdash;</div>
+        <div class="report-label">Taquillero con más ventas <span th:if="${!#lists.isEmpty(ventasTaquilleros)}" th:text="'($' + ${#numbers.formatInteger(ventasTaquilleros[0].total,1,'POINT')} + ')'">($0)</span></div>
+      </article>
+    </section>
+
+    <!-- 2. Ventas por Taquillero y Productos más vendidos en 2 columnas -->
+    <div class="grid-2">
+      <!-- Ventas por Taquillero -->
+      <section class="table-card">
+        <div class="card-pad section-head">
+          <div>
+            <h2>Ventas por Taquillero</h2>
+            <p>Productividad del personal en mostrador</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Taquillero</th>
+                <th>Facturas</th>
+                <th>Boletos</th>
+                <th>Cafetería</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="vt : ${ventasTaquilleros}">
+                <td><strong th:text="${vt.taquillero}">Laura</strong></td>
+                <td th:text="${vt.facturas}">0</td>
+                <td th:text="'$' + ${#numbers.formatInteger(vt.totalBoletos,1,'POINT')}">$0</td>
+                <td th:text="'$' + ${#numbers.formatInteger(vt.totalConfiteria,1,'POINT')}">$0</td>
+                <td><strong style="color: var(--navy-700);" th:text="'$' + ${#numbers.formatInteger(vt.total,1,'POINT')}">$0</strong></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(ventasTaquilleros)}">
+                <td colspan="5" class="empty-state">No hay ventas registradas por taquillero.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Productos más vendidos -->
+      <section class="table-card">
+        <div class="card-pad section-head">
+          <div>
+            <h2>Productos más vendidos</h2>
+            <p>Preferencias de cafetería</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Unidades</th>
+                <th>Total Recaudado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="prod : ${productosVendidos}">
+                <td>
+                  <div class="cell-title">
+                    <span class="icon icon-popcorn" style="color: var(--warning); font-size: 16px;"></span>
+                    <strong th:text="${prod.producto}">Palomitas</strong>
+                  </div>
+                </td>
+                <td><strong th:text="${prod.unidades}">0</strong> un.</td>
+                <td><strong style="color: var(--navy-700);" th:text="'$' + ${#numbers.formatInteger(prod.total,1,'POINT')}">$0</strong></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(productosVendidos)}">
+                <td colspan="3" class="empty-state">No hay ventas de cafetería registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 3. Ocupación por sala y Películas más vistas en 2 columnas -->
+    <div class="grid-2">
+      <!-- Ocupación por sala -->
+      <section class="table-card">
+        <div class="card-pad section-head">
+          <div>
+            <h2>Ocupación por sala</h2>
+            <p>Capacidad y porcentaje de asistencia</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Funciones</th>
+                <th>Boletos</th>
+                <th>Ocupación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="os : ${ocupacionSalas}">
+                <td><strong th:text="${os.sala}">Sala 1</strong></td>
+                <td th:text="${os.funciones}">0</td>
+                <td><span th:text="${os.boletosVendidos}">0</span> / <span th:text="${os.capacidad}">0</span></td>
+                <td>
+                  <span class="badge"
+                        th:classappend="${os.porcentaje >= 70 ? ' badge-success' : (os.porcentaje >= 40 ? ' badge-warning' : ' badge-neutral')}"
+                        th:text="${os.porcentaje} + '%'">
+                    72%
+                  </span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(ocupacionSalas)}">
+                <td colspan="4" class="empty-state">No hay datos de funciones para esta fecha.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Películas más vistas -->
+      <section class="table-card">
+        <div class="card-pad section-head">
+          <div>
+            <h2>Películas más vistas</h2>
+            <p>Títulos con mayor recaudación en taquilla</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Película</th>
+                <th>Boletos</th>
+                <th>Total Taquilla</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${peliculasMasVistas}">
+                <td>
+                  <div class="cell-title">
+                    <span class="icon icon-film" style="color: var(--red-500); font-size: 16px;"></span>
+                    <strong th:text="${p.pelicula}">Dune</strong>
+                  </div>
+                </td>
+                <td><strong th:text="${p.boletos}">0</strong></td>
+                <td><strong style="color: var(--navy-700);" th:text="'$' + ${#numbers.formatInteger(p.total,1,'POINT')}">$0</strong></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(peliculasMasVistas)}">
+                <td colspan="3" class="empty-state">No hay ventas registradas en esta fecha.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 4. Funciones más taquilleras -->
+    <section class="table-card">
+      <div class="card-pad section-head">
+        <div>
+          <h2>Funciones más taquilleras</h2>
+          <p>Proyecciones con mayor venta de entradas</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Película</th>
+              <th>Sala</th>
+              <th>Horario</th>
+              <th>Boletos Vendidos</th>
+              <th>Ingresos Totales</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${funcionesTaquilleras}">
+              <td>
+                <div class="cell-title">
+                  <span class="icon icon-film" style="color: var(--blue-600); font-size: 16px;"></span>
+                  <strong th:text="${f.pelicula}">Película</strong>
+                </div>
+              </td>
+              <td th:text="${f.sala}">Sala 1</td>
+              <td>
+                <span class="badge badge-neutral" th:text="${f.horaInicio}">14:00</span>
+              </td>
+              <td><strong th:text="${f.boletos}">0</strong> boletos</td>
+              <td><strong style="color: var(--success);" th:text="'$' + ${#numbers.formatInteger(f.ingresos,1,'POINT')}">$0</strong></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(funcionesTaquilleras)}">
+              <td colspan="5" class="empty-state">No hay funciones taquilleras registradas en esta fecha.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

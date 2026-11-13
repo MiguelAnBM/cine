@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Administración', 'administracion', ~{::#contenidoAdmin})}">
+<body>
+  <div id="contenidoAdmin" class="stack">
+    <div class="section-head">
+      <div>
+        <h2>Panel de Administración</h2>
+        <p>Módulos de control exclusivo para el administrador del cine</p>
+      </div>
+    </div>
+    <div class="admin-grid">
+      <article class="admin-card">
+        <div class="admin-card-icon">
+          <span class="icon icon-room"></span>
+        </div>
+        <div>
+          <strong>Gestión de Salas</strong>
+          <p>Configura las salas de proyección, tipos de experiencia (2D / 3D / IMAX) y el precio oficial del boleto.</p>
+        </div>
+        <a class="btn btn-secondary" th:href="@{/administracion/salas}">Administrar Salas <span class="icon icon-chevron-right"></span></a>
+      </article>
+      <article class="admin-card">
+        <div class="admin-card-icon">
+          <span class="icon icon-users"></span>
+        </div>
+        <div>
+          <strong>Personal de Taquilla</strong>
+          <p>Registra, edita y activa o desactiva al personal autorizado para ventas en mostrador y cafetería.</p>
+        </div>
+        <a class="btn btn-secondary" th:href="@{/administracion/taquilleros}">Administrar Taquilleros <span class="icon icon-chevron-right"></span></a>
+      </article>
+      <article class="admin-card">
+        <div class="admin-card-icon admin-card-icon--red">
+          <span class="icon icon-shield"></span>
+        </div>
+        <div>
+          <strong>Anulación de Facturas</strong>
+          <p>Consulta facturas emitidas por cada taquillero y autoriza la anulación liberando las butacas vendidas.</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/administracion/anulaciones}">Gestionar Anulaciones <span class="icon icon-chevron-right"></span></a>
+      </article>
+      <article class="admin-card">
+        <div class="admin-card-icon">
+          <span class="icon icon-chart"></span>
+        </div>
+        <div>
+          <strong>Facturas</strong>
+          <p>Consulta de facturas emitidas, filtradas por taquillero, estado y rango de fecha.</p>
+        </div>
+        <a class="btn btn-secondary" th:href="@{/administracion/facturas}">Consultar Facturas <span class="icon icon-chevron-right"></span></a>
+      </article>
+    </div>
+  </div>
+</body>
+</html>

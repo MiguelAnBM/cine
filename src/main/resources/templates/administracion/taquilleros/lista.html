@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Taquilleros', 'administracion', ~{::#contenidoTaquilleros})}">
+<body>
+  <div id="contenidoTaquilleros" class="stack">
+    <!-- Encabezado de Taquilleros -->
+    <div class="section-head">
+      <div>
+        <h2>Personal de Taquilla</h2>
+        <p>Gestiona el personal habilitado para ventas de boletos y cafetería</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a class="btn btn-ghost" th:href="@{/administracion}">
+          <span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Volver al panel
+        </a>
+        <a class="btn btn-primary" th:href="@{/administracion/taquilleros/nuevo}">
+          <span class="icon icon-plus"></span> Nuevo taquillero
+        </a>
+      </div>
+    </div>
+
+    <!-- Tabla de Taquilleros -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nombre Completo</th>
+              <th>Rol en el Sistema</th>
+              <th>Estado</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="t : ${taquilleros}">
+              <td>
+                <div class="cell-title">
+                  <div class="avatar" style="width: 32px; height: 32px; font-size: 11px;"
+                       th:text="${#strings.substring(t.nombreCompleto, 0, 2).toUpperCase()}">
+                    LT
+                  </div>
+                  <strong th:text="${t.nombreCompleto}">Laura Taquilla</strong>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-info">TAQUILLERO</span>
+              </td>
+              <td>
+                <span class="badge"
+                      th:classappend="${t.estado.name() == 'ACTIVO' ? ' badge-success' : ' badge-warning'}"
+                      th:text="${t.estado}">
+                  ACTIVO
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; align-items: center; gap: 8px;">
+                  <a class="btn btn-ghost btn-sm" th:href="@{/administracion/taquilleros/{id}/editar(id=${t.id})}">
+                    <span class="icon icon-edit"></span> Editar
+                  </a>
+
+                  <!-- Activar / Desactivar -->
+                  <form th:action="@{/administracion/taquilleros/{id}/estado(id=${t.id})}" method="post" style="display:inline; margin: 0;">
+                    <input type="hidden" name="nuevoEstado" th:value="${t.estado.name() == 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'}" />
+                    <button class="btn btn-sm"
+                            th:classappend="${t.estado.name() == 'ACTIVO' ? ' btn-danger-ghost' : ' btn-ghost'}"
+                            type="submit"
+                            onclick="return confirm('¿Confirmas el cambio de estado del taquillero?');">
+                      <span class="icon" th:classappend="${t.estado.name() == 'ACTIVO' ? 'icon-power' : 'icon-check'}"></span>
+                      <span th:text="${t.estado.name() == 'ACTIVO' ? 'Desactivar' : 'Activar'}">Estado</span>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(taquilleros)}">
+              <td colspan="4">
+                <div class="empty-state">
+                  <span class="icon icon-users"></span>
+                  <p>No hay taquilleros registrados en el sistema.</p>
+                  <a class="btn btn-primary btn-sm" th:href="@{/administracion/taquilleros/nuevo}">
+                    <span class="icon icon-plus"></span> Registrar primer taquillero
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

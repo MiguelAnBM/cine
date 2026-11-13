@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: pagina('Facturas', 'administracion', ~{::#contenidoFacturas})}">
+<body>
+  <div id="contenidoFacturas" class="stack">
+    <div class="section-head">
+      <div>
+        <h2>Consulta de Facturas</h2>
+        <p>Todas las transacciones registradas en el sistema, ordenadas de más reciente a más antigua</p>
+      </div>
+      <a class="btn btn-ghost" th:href="@{/administracion}"><span class="icon icon-arrow-right" style="transform: rotate(180deg);"></span> Volver al panel</a>
+    </div>
+    <div class="card card-pad">
+      <form method="get" th:action="@{/administracion/facturas}" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px;">
+        <div class="field" style="flex: 1 1 320px; max-width: 480px;">
+          <label for="filtroTaquillero"><span class="icon icon-users" style="color: var(--blue-600);"></span> Filtrar por taquillero:</label>
+          <select id="filtroTaquillero" name="idTaquillero" onchange="this.form.submit()">
+            <option value="">-- Todos los taquilleros --</option>
+            <option th:each="t : ${taquilleros}" th:value="${t.id}" th:text="${t.nombreCompleto}" th:selected="${t.id == idTaquilleroSeleccionado}">Taquillero</option>
+          </select>
+        </div>
+        <div class="field" style="flex: 1 1 200px; max-width: 300px;">
+          <label for="filtroEstado"><span class="icon icon-info"></span> Estado:</label>
+          <select id="filtroEstado" name="estado" onchange="this.form.submit()">
+            <option value="">-- No anuladas (Emitidas) --</option>
+            <option th:value="${T(com.comfenalco.cine.model.enums.EstadoFactura).EMITIDA}" th:selected="${estadoFiltro?.name() == 'EMITIDA'}">Emitida</option>
+            <option th:value="${T(com.comfenalco.cine.model.enums.EstadoFactura).ANULADA}" th:selected="${estadoFiltro?.name() == 'ANULADA'}">Anulada</option>
+          </select>
+        </div>
+        <div class="field" style="flex: 1 1 180px; max-width: 220px;">
+          <label for="filtroDesde">Desde:</label>
+          <input type="date" id="filtroDesde" name="desde" th:value="${desdeFiltro}" />
+        </div>
+        <div class="field" style="flex: 1 1 180px; max-width: 220px;">
+          <label for="filtroHasta">Hasta:</label>
+          <input type="date" id="filtroHasta" name="hasta" th:value="${hastaFiltro}" />
+        </div>
+        <button type="submit" class="btn btn-secondary">Consultar</button>
+        <a class="btn btn-ghost" th:href="@{/administracion/facturas}">Limpiar</a>
+      </form>
+    </div>
+    <div class="table-card">
+      <div class="card-pad section-head">
+        <div>
+          <h2>Facturas Emitidas</h2>
+          <p th:if="${paginaFacturas != null and !paginaFacturas.empty}">
+            Página <span th:text="${paginaActual + 1}">1</span> de
+            <span th:text="${paginaFacturas.totalPages}">1</span>
+            - <span th:text="${paginaFacturas.totalElements}">0</span> facturas en total
+          </p>
+          <p th:if="${paginaFacturas == null or paginaFacturas.empty}">
+            No hay facturas registradas
+          </p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>N&#186; Factura</th>
+              <th>Fecha y Hora</th>
+              <th>Taquillero</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="f : ${paginaFacturas != null ? paginaFacturas.content : T(java.util.Collections).emptyList()}">
+              <td><strong style="color: var(--navy-800);" th:text="'#' + ${f.id}">#1</strong></td>
+              <td><span class="badge badge-neutral"><span class="icon icon-clock" style="font-size: 11px;"></span><span th:text="${#temporals.format(f.fechaHora, 'yyyy-MM-dd HH:mm')}">2026-11-10 18:00</span></span></td>
+              <td th:text="${f.taquillero}">Taquillero</td>
+              <td th:text="${f.nombreCliente != null and !#strings.isEmpty(f.nombreCliente) ? f.nombreCliente : 'Cliente de mostrador'}">Cliente</td>
+              <td><strong style="color: var(--red-600); font-size: 14px;" th:text="'$' + ${#numbers.formatInteger(f.total,1,'POINT')}">$0</strong></td>
+              <td><span class="badge badge-info" th:text="${f.estado}">EMITIDA</span></td>
+              <td>
+                <a class="btn btn-secondary btn-sm" th:href="@{/administracion/facturas/{id}/ver(id=${f.id}, idTaquillero=${idTaquilleroSeleccionado}, estado=${estadoFiltro}, desde=${desdeFiltro}, hasta=${hastaFiltro}, pagina=${paginaActual}, ver=${true})}">Ver Detalle</a>
+              </td>
+            </tr>
+            <tr th:if="${paginaFacturas == null or paginaFacturas.empty}">
+              <td colspan="7">
+                <div class="empty-state">
+                  <span class="icon icon-check" style="color: var(--success); opacity: 0.8;"></span>
+                  <p>No hay facturas registradas para los filtros seleccionados.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal de factura: mismo comportamiento que en generacion de venta -->
+    <div th:if="${verDetalle && facturaEmitida != null}" th:replace="~{fragments/factura-modal :: modalFactura}"></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+  <!-- ========================================================================
+       Sidebar estático y permanente en todos los módulos
+       ======================================================================== -->
+  <aside th:fragment="sidebar(seccionActiva)" class="sidebar">
+    <a class="brand" th:href="@{/}">
+      <span class="brand-mark"><span class="icon icon-film"></span></span>
+      <span class="brand-text"><strong>CINE</strong><small>Comfenalco</small></span>
+    </a>
+
+    <nav class="nav-section" aria-label="Navegación principal">
+      <span class="nav-label">Menú principal</span>
+      <a class="nav-link" th:href="@{/}" th:classappend="${seccionActiva == 'inicio'} ? ' is-active' : ''">
+        <span class="icon icon-dashboard"></span>Inicio
+      </a>
+      <a class="nav-link" th:href="@{/cartelera}" th:classappend="${seccionActiva == 'cartelera'} ? ' is-active' : ''">
+        <span class="icon icon-film"></span>Cartelera
+      </a>
+      <a class="nav-link" th:href="@{/funciones}" th:classappend="${seccionActiva == 'funciones'} ? ' is-active' : ''">
+        <span class="icon icon-calendar"></span>Funciones
+      </a>
+      <a class="nav-link" th:href="@{/boletos}" th:classappend="${seccionActiva == 'boletos'} ? ' is-active' : ''">
+        <span class="icon icon-ticket"></span>Boletos
+      </a>
+      <a class="nav-link" th:href="@{/cafeteria}" th:classappend="${seccionActiva == 'cafeteria'} ? ' is-active' : ''">
+        <span class="icon icon-popcorn"></span>Cafetería
+      </a>
+      <a class="nav-link" th:href="@{/administracion}" th:classappend="${seccionActiva == 'administracion'} ? ' is-active' : ''">
+        <span class="icon icon-settings"></span>Administración
+      </a>
+      <a class="nav-link" th:href="@{/reportes}" th:classappend="${seccionActiva == 'reportes'} ? ' is-active' : ''">
+        <span class="icon icon-chart"></span>Reportes
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar" th:text="${esAdmin ? inicialesUsuario : 'TQ'}">TQ</div>
+        <div>
+          <strong th:text="${esAdmin ? nombreUsuarioActual : 'Taquillero'}">Taquillero</strong>
+          <span th:text="${esAdmin ? 'Administrador' : 'Personal de Taquilla'}">Personal de Taquilla</span>
+        </div>
+      </div>
+
+      <div th:if="${esAdmin}">
+        <form th:action="@{/logout}" method="post" style="margin: 0;">
+          <button type="submit" class="sidebar-action" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; color: inherit; font: inherit;">
+            <span class="icon icon-power"></span>Cerrar sesión
+          </button>
+        </form>
+      </div>
+      <div th:unless="${esAdmin}">
+        <a class="sidebar-action" th:href="@{/login}">
+          <span class="icon icon-user"></span>Iniciar sesión
+        </a>
+      </div>
+    </div>
+  </aside>
+</body>
+</html>
