@@ -1,7 +1,6 @@
 package com.comfenalco.cine.service.impl;
 
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 

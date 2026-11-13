@@ -69,7 +69,7 @@ public class SeguridadConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(autorizaciones -> autorizaciones
                         // Solo el ADMINISTRADOR puede ingresar a Administración, Reportes y Facturas
                         .requestMatchers("/administracion", "/administracion/**",
-                                         "/reportes", "/reportes/**", "/facturas/**")
+                                         "/reportes", "/reportes/**")
                         .hasRole("ADMINISTRADOR")
 
                         // Archivos de diseño (CSS, JS, imágenes), pantalla de login y errores son públicos

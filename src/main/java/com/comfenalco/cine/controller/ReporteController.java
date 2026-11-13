@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.comfenalco.cine.dto.response.FuncionTaquilleraResponse;
 import com.comfenalco.cine.dto.response.OcupacionSalaResponse;
 import com.comfenalco.cine.dto.response.ResumenVentasResponse;
-import com.comfenalco.cine.dto.response.VentaDiariaResponse;
 import com.comfenalco.cine.dto.response.VentaPorPeliculaResponse;
 import com.comfenalco.cine.dto.response.VentaPorProductoResponse;
 import com.comfenalco.cine.dto.response.VentaPorTaquilleroResponse;

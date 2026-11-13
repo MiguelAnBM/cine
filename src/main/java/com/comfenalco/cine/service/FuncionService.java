@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 
 import com.comfenalco.cine.dto.request.FuncionRequest;
 import com.comfenalco.cine.dto.response.FuncionResponse;
-import com.comfenalco.cine.dto.response.PeliculaResponse;
 
 public interface FuncionService {
 
